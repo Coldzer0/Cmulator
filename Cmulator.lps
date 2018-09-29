@@ -1,0 +1,500 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <Version Value="10"/>
+    <BuildModes Active="OSX_Release"/>
+    <Units Count="45">
+      <Unit0>
+        <Filename Value="Cmulator.pas"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <TopLine Value="172"/>
+        <CursorPos X="50" Y="35"/>
+        <FoldState Value=" T3i00J1y"/>
+        <UsageCount Value="201"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="Core/emu.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Emu"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="1024"/>
+        <CursorPos X="20" Y="1031"/>
+        <FoldState Value=" T3jQ0{X2 pjBm20,1]9Ml60w]9iakC0S41311 T0nH6313"/>
+        <UsageCount Value="210"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="Core/segments.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Segments"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="36"/>
+        <CursorPos X="20" Y="53"/>
+        <FoldState Value=" T3jb0S30"/>
+        <UsageCount Value="203"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="Core/utils.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Utils"/>
+        <EditorIndex Value="8"/>
+        <CursorPos X="38" Y="7"/>
+        <UsageCount Value="224"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="Core/struct.inc"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="207"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="Core/struct.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="718"/>
+        <CursorPos X="3" Y="722"/>
+        <UsageCount Value="207"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="Core/pe_loader.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="PE_Loader"/>
+        <EditorIndex Value="9"/>
+        <TopLine Value="645"/>
+        <CursorPos Y="656"/>
+        <UsageCount Value="210"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="Core/fnhook.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="FnHook"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="86"/>
+        <CursorPos Y="90"/>
+        <UsageCount Value="201"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="Core/globals.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Globals"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="12"/>
+        <CursorPos X="14" Y="14"/>
+        <UsageCount Value="212"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="Core/jsplugins_bengine.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="JSPlugins_BEngine"/>
+        <EditorIndex Value="6"/>
+        <TopLine Value="195"/>
+        <CursorPos X="31" Y="233"/>
+        <UsageCount Value="200"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="Core/memmanager.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="MemManager"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="50" Y="11"/>
+        <UsageCount Value="201"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit10>
+      <Unit11>
+        <Filename Value="Core/tep_peb.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="TEP_PEB"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="94"/>
+        <CursorPos X="5" Y="105"/>
+        <FoldState Value=" TCKXH034171611312111Y"/>
+        <UsageCount Value="216"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit11>
+      <Unit12>
+        <Filename Value="Core/process/ethreads.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="EThreads"/>
+        <EditorIndex Value="5"/>
+        <TopLine Value="10"/>
+        <UsageCount Value="200"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit12>
+      <Unit13>
+        <Filename Value="Core/GUI/gui.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="GUI"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="92"/>
+        <CursorPos Y="98"/>
+        <FoldState Value=" T3X0A1{"/>
+        <UsageCount Value="200"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit13>
+      <Unit14>
+        <Filename Value="Core/interactive.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Interactive"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="10" Y="2"/>
+        <UsageCount Value="131"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit14>
+      <Unit15>
+        <Filename Value="Core/nativehooks.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="NativeHooks"/>
+        <EditorIndex Value="4"/>
+        <TopLine Value="47"/>
+        <CursorPos X="7" Y="64"/>
+        <UsageCount Value="72"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit15>
+      <Unit16>
+        <Filename Value="jsemuobj.pas"/>
+        <UnitName Value="JSEmuObj"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="16"/>
+        <CursorPos X="48" Y="32"/>
+        <UsageCount Value="200"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit16>
+      <Unit17>
+        <Filename Value="Core/jsemuobj.pas"/>
+        <UnitName Value="JSEmuObj"/>
+        <EditorIndex Value="7"/>
+        <TopLine Value="12"/>
+        <CursorPos X="4" Y="12"/>
+        <UsageCount Value="105"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit17>
+      <Unit18>
+        <Filename Value="Core/unicorn/Unicorn_dyn.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="251"/>
+        <CursorPos X="3" Y="261"/>
+        <UsageCount Value="81"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit18>
+      <Unit19>
+        <Filename Value="Core/unicorn/UnicornConst.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="68"/>
+        <CursorPos X="20" Y="75"/>
+        <UsageCount Value="27"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit19>
+      <Unit20>
+        <Filename Value="Core/besenunits.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="71"/>
+        <CursorPos X="3" Y="88"/>
+        <UsageCount Value="15"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit20>
+      <Unit21>
+        <Filename Value="Core/PE/PE.Image.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="24"/>
+        <UsageCount Value="32"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit21>
+      <Unit22>
+        <Filename Value="Core/PE/PE.Parser.Import.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="150"/>
+        <CursorPos X="13" Y="157"/>
+        <UsageCount Value="28"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit22>
+      <Unit23>
+        <Filename Value="Core/PE/PE.Types.Imports.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="29"/>
+        <CursorPos X="50" Y="39"/>
+        <UsageCount Value="5"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit23>
+      <Unit24>
+        <Filename Value="/usr/local/share/fpcsrc/rtl/objpas/classes/classesh.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="867"/>
+        <CursorPos X="28" Y="876"/>
+        <UsageCount Value="9"/>
+      </Unit24>
+      <Unit25>
+        <Filename Value="Core/pesp/PsePeFile.pas"/>
+        <EditorIndex Value="10"/>
+        <TopLine Value="488"/>
+        <CursorPos X="21" Y="500"/>
+        <UsageCount Value="15"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit25>
+      <Unit26>
+        <Filename Value="Core/pesp/PseFile.pas"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="6"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit26>
+      <Unit27>
+        <Filename Value="Core/pesp/PseImportTable.pas"/>
+        <EditorIndex Value="11"/>
+        <TopLine Value="54"/>
+        <CursorPos X="14" Y="65"/>
+        <UsageCount Value="14"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit27>
+      <Unit28>
+        <Filename Value="Core/Capstone/Capstone.pas"/>
+        <EditorIndex Value="2"/>
+        <UsageCount Value="53"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit28>
+      <Unit29>
+        <Filename Value="Core/Capstone/CapstoneApi.pas"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="8"/>
+        <CursorPos X="28" Y="21"/>
+        <UsageCount Value="48"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit29>
+      <Unit30>
+        <Filename Value="/usr/local/share/fpcsrc/packages/fcl-json/src/jsonconf.pp"/>
+        <UnitName Value="jsonConf"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="127"/>
+        <UsageCount Value="9"/>
+      </Unit30>
+      <Unit31>
+        <Filename Value="/usr/local/share/fpcsrc/packages/fcl-json/src/jsonparser.pp"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="35"/>
+        <UsageCount Value="9"/>
+      </Unit31>
+      <Unit32>
+        <Filename Value="/usr/local/share/fpcsrc/packages/fcl-json/src/fpjson.pp"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="112"/>
+        <CursorPos X="3" Y="72"/>
+        <UsageCount Value="9"/>
+      </Unit32>
+      <Unit33>
+        <Filename Value="/usr/local/share/fpcsrc/rtl/inc/objpash.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="182"/>
+        <CursorPos X="23" Y="193"/>
+        <UsageCount Value="9"/>
+      </Unit33>
+      <Unit34>
+        <Filename Value="Core/JSON/superobject.pas"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="30" Y="13"/>
+        <UsageCount Value="12"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit34>
+      <Unit35>
+        <Filename Value="Core/JS/BESENStringUtils.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="80"/>
+        <CursorPos X="10" Y="91"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit35>
+      <Unit36>
+        <Filename Value="Core/JS/BESENTypes.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="92"/>
+        <CursorPos X="6" Y="103"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit36>
+      <Unit37>
+        <Filename Value="Core/JS/BESENValue.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="261"/>
+        <CursorPos X="10" Y="272"/>
+        <UsageCount Value="22"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit37>
+      <Unit38>
+        <Filename Value="/usr/local/share/fpcsrc/packages/rtl-console/src/inc/crth.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="38"/>
+        <CursorPos X="3" Y="46"/>
+        <UsageCount Value="8"/>
+      </Unit38>
+      <Unit39>
+        <Filename Value="Core/unicorn/X86Const.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="246"/>
+        <CursorPos X="3" Y="39"/>
+        <UsageCount Value="6"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit39>
+      <Unit40>
+        <Filename Value="Core/pesp/PsePe.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="313"/>
+        <CursorPos X="31" Y="321"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit40>
+      <Unit41>
+        <Filename Value="Core/JSON/supertypes.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="15"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit41>
+      <Unit42>
+        <Filename Value="Core/generics_collections/src/generics.collections.pas"/>
+        <UnitName Value="Generics.Collections"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit42>
+      <Unit43>
+        <Filename Value="/usr/local/share/fpcsrc/rtl/objpas/typinfo.pp"/>
+        <UnitName Value="TypInfo"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="10"/>
+      </Unit43>
+      <Unit44>
+        <Filename Value="Cmulator.lps"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="XML"/>
+      </Unit44>
+    </Units>
+    <JumpHistory Count="19" HistoryIndex="18">
+      <Position1>
+        <Filename Value="Core/pe_loader.pas"/>
+        <Caret Line="697" TopLine="679"/>
+      </Position1>
+      <Position2>
+        <Filename Value="Core/pe_loader.pas"/>
+        <Caret Line="708" TopLine="697"/>
+      </Position2>
+      <Position3>
+        <Filename Value="Core/pe_loader.pas"/>
+        <Caret Line="690" Column="5" TopLine="681"/>
+      </Position3>
+      <Position4>
+        <Filename Value="Core/pe_loader.pas"/>
+        <Caret Line="445" Column="22" TopLine="212"/>
+      </Position4>
+      <Position5>
+        <Filename Value="Core/pe_loader.pas"/>
+        <Caret Line="689" Column="22" TopLine="684"/>
+      </Position5>
+      <Position6>
+        <Filename Value="Core/pesp/PsePeFile.pas"/>
+        <Caret Line="508" Column="7" TopLine="498"/>
+      </Position6>
+      <Position7>
+        <Filename Value="Core/pesp/PsePeFile.pas"/>
+        <Caret Line="462" Column="3" TopLine="451"/>
+      </Position7>
+      <Position8>
+        <Filename Value="Core/pesp/PsePeFile.pas"/>
+        <Caret Line="507" Column="59" TopLine="499"/>
+      </Position8>
+      <Position9>
+        <Filename Value="Core/pe_loader.pas"/>
+        <Caret Line="713" Column="7" TopLine="702"/>
+      </Position9>
+      <Position10>
+        <Filename Value="Core/pe_loader.pas"/>
+        <Caret Line="28" Column="26" TopLine="24"/>
+      </Position10>
+      <Position11>
+        <Filename Value="Core/pesp/PsePeFile.pas"/>
+        <Caret Line="494" TopLine="492"/>
+      </Position11>
+      <Position12>
+        <Filename Value="Core/Capstone/CapstoneApi.pas"/>
+        <Caret Line="26" Column="19" TopLine="14"/>
+      </Position12>
+      <Position13>
+        <Filename Value="Core/Capstone/CapstoneApi.pas"/>
+        <Caret Line="500" Column="5" TopLine="477"/>
+      </Position13>
+      <Position14>
+        <Filename Value="Cmulator.pas"/>
+        <Caret Line="115" Column="31" TopLine="30"/>
+      </Position14>
+      <Position15>
+        <Filename Value="Cmulator.pas"/>
+        <Caret Line="8" Column="27" TopLine="8"/>
+      </Position15>
+      <Position16>
+        <Filename Value="Core/Capstone/CapstoneApi.pas"/>
+        <Caret Line="190" Column="92" TopLine="183"/>
+      </Position16>
+      <Position17>
+        <Filename Value="Cmulator.pas"/>
+        <Caret Line="205" Column="16" TopLine="195"/>
+      </Position17>
+      <Position18>
+        <Filename Value="Cmulator.pas"/>
+      </Position18>
+      <Position19>
+        <Filename Value="Core/emu.pas"/>
+        <Caret Line="12" Column="12" TopLine="771"/>
+      </Position19>
+    </JumpHistory>
+  </ProjectSession>
+  <Debugging>
+    <BreakPoints Count="2">
+      <Item1>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="Core/emu.pas"/>
+        <Line Value="283"/>
+      </Item1>
+      <Item2>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="Core/emu.pas"/>
+        <Line Value="269"/>
+      </Item2>
+    </BreakPoints>
+    <Watches Count="3">
+      <Item1>
+        <Expression Value="rva"/>
+        <DisplayStyle Value="wdfHex"/>
+      </Item1>
+      <Item2>
+        <Expression Value="api.Name"/>
+      </Item2>
+      <Item3>
+        <Expression Value="FuncAddr"/>
+        <DisplayStyle Value="wdfHex"/>
+      </Item3>
+    </Watches>
+  </Debugging>
+</CONFIG>
