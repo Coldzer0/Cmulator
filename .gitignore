@@ -44,7 +44,6 @@ __recovery/
 # unwanted folders :D
 unicorn-engine-pascal
 CTF
-samples
 GDT
 win_dlls
 Build/OSX
