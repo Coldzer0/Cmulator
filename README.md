@@ -1,4 +1,4 @@
-# Cmulator - Scriptable x86 RE Sandbox Emulator
+# Cmulator - Scriptable x86 RE Sandbox Emulator (v0.2 Beta)
 
 <h3> <b>Call for LOGO</b> , if you good at design give it a try and Create Logo for Cmulator <br>
 your name will apper in <b>Acknowledgements</b>
@@ -27,16 +27,17 @@ Based on Unicorn & Capstone Engine & javascript .
 <hr>
 
 ## Current Features
-* Simulated GDT & Segments .
-* Simulated TEB & PEB structures for both Shellcodes and PE .
-* Simulated LDR Table & Data .
-* Manages Image and Stack memory .
-* Evaluates functions based on DLL exports .
-* Trace all Executed API ( good for Obfuscated PE) .
-* Displays HexDump with Strings based on referenced memory locations .
-* Patching the Memory .
-* Custome API hooks using Javascript (scripting) .
-* Handle SEH (still need more work) .
+* Simulated GDT & Segments.
+* Simulated TEB & PEB structures for both Shellcodes and PE.
+* Simulated LDR Table & Data.
+* Manages Image and Stack memory.
+* Evaluates functions based on DLL exports.
+* Trace all Executed API ( good for Obfuscated PE).
+* Displays HexDump with Strings based on referenced memory locations.
+* Patching the Memory.
+* Custome API hooks using Javascript (scripting).
+* Handle SEH (still need more work).
+* [+] Hook Address.
 
 <br>
 <hr>
@@ -496,18 +497,22 @@ And Try it Your Self , find it at "samples/obfuscated/obfuscated.exe" 😉
 <br>
 
 ## WIP BY Priority :
-* Memory Manager 
+* Memory Manager - Next Update
 * Checking for Bug & fixing them 👌🏻
 
 <hr>
 
 ## TODO BY Priority :
-- [ ] PC (RIP - EIP) Hook .
-- [ ] improving exception handling.
-- [ ] Native Plugins & API Hook Libs .
+- [x] PC (RIP - EIP) Hook.
+- [x] improving exception handling.
+- [x] Native Plugins & API Hook Libs.
+- [ ] Add Memory Manager.
+- [ ] **Sysenter** / **Syscall** Global Hook in JS.
+- [ ] Control TEB/PEB in JS.
 - [ ] Interactive debug shell.
 - [ ] Add Assembler.
 - [ ] Implement Threading.
+
 
 <hr>
 
@@ -530,8 +535,6 @@ And Try it Your Self , find it at "samples/obfuscated/obfuscated.exe" 😉
 
 ### 1. Build Cmulator
 
-This command will also create other binaries such as pesymbols ans peinfo.
-
 ```
 git clone https://github.com/Coldzer0/Cmulator.git
 
@@ -547,7 +550,7 @@ Projects -> Project Options -> Compiler Options
 and Select the Mode for your OS .
 
 ```
-#### Or Just Download From [Releases](https://github.com/Coldzer0/Cmulator/releases)
+## Or Just Download From [Releases](https://github.com/Coldzer0/Cmulator/releases)
 <br><br>
 
 ### 2. Create config.json config file
@@ -618,5 +621,6 @@ Data Structure](http://sandsprite.com/CodeStuff/Understanding_the_Peb_Loader_Dat
 
 
 
-
 </b>
+
+## With ❤️ From Home.
