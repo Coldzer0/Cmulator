@@ -8,7 +8,7 @@ uses
   Classes,
   SysUtils,
   {$I besenunits.inc},
-  Crt;
+  Crt,LazFileUtils,xxHash;
 
 type
    TBESENInstance = class;
@@ -17,7 +17,7 @@ type
 
    TNewHook = class(TBESENNativeObject)
    private
-     FOnEnter : TBESENObjectFunction;
+     FOnEnter  : TBESENObjectFunction;
      FOnExit   : TBESENObjectFunction;
      Fargs     : TBESENObjectArray;
    protected
@@ -40,7 +40,7 @@ type
      ShuttingDown: Boolean;
      constructor Create();
      destructor Destroy; override;
-     procedure LoadPlugin(filename : AnsiString);
+     procedure LoadScript(filename : AnsiString);
      procedure InitJSEmu();
    end;
 
@@ -200,15 +200,10 @@ begin
   ShuttingDown:=False;
   Self.InjectObject('console',{$ifndef BESENSingleStringType}BESENUTF16ToUTF8({$endif}BESENObjectConsoleSource{$ifndef BESENSingleStringType}){$endif});
 
-  RegisterNativeObject('ApiHook', TNewHook);
-
-  //FSystemObject:=TBESENSystemObject.Create(Self, Site);
-  //GarbageCollector.Protect(FSystemObject);
-  //ObjectGlobal.put('Process', BESENObjectValue(FSystemObject), false);
+  Self.RegisterNativeObject('ApiHook', TNewHook);
 
   LogSystem := TLogSystem.Create;
   JSCmulator := TEmuObj.Create;
-
 
   ObjectGlobal.RegisterNativeFunction('print', LogSystem.log, 1, []);
   ObjectGlobal.RegisterNativeFunction('log', LogSystem.log, 1, []);
@@ -225,7 +220,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TBESENInstance.LoadPlugin(filename : AnsiString);
+procedure TBESENInstance.LoadScript(filename : AnsiString);
 begin
   if FileExists(filename) then
   begin
@@ -258,11 +253,12 @@ begin
 
   JSEmu:=TBESENObject.Create(Self,TBESEN(Self).ObjectPrototype,false);
   TBESEN(Self).GarbageCollector.Add(JSEmu);
-  // Register As Gloval Object - maybe i'll do soon .
-  //TBESEN(Self).ObjectGlobal.OverwriteData('Cmu',BESENObjectValue(JSEmu),[bopaCONFIGURABLE]);
-  JSEmu.OverwriteData('isx64',BESENBooleanValue(Emulator.PE_x64),[bopaCONFIGURABLE]);
+
+  JSEmu.OverwriteData('isx64',BESENBooleanValue(Emulator.isx64),[bopaCONFIGURABLE]);
   JSEmu.OverwriteData('ImageBase',BESENNumberValue(Emulator.img.ImageBase),[bopaCONFIGURABLE]);
   JSEmu.OverwriteData('TEB',BESENNumberValue(Emulator.TEB),[bopaCONFIGURABLE]);
+  JSEmu.OverwriteData('PID',BESENNumberValue(Emulator.PID),[bopaCONFIGURABLE]);
+  JSEmu.OverwriteData('Filename',BESENStringValue(BESENUTF8ToUTF16(ExtractFileName(Emulator.img.FileName))),[bopaCONFIGURABLE]);
 
 
   { Modules }
@@ -301,7 +297,7 @@ begin
   JSEmu.RegisterNativeFunction('push',JSCmulator.push,1,[]);
   JSEmu.RegisterNativeFunction('pop',JSCmulator.pop,0,[]);
 
-  { hmmmmm }
+  { Mics }
   JSEmu.RegisterNativeFunction('Stop',JSCmulator.Stop,0,[]);
   JSEmu.RegisterNativeFunction('LastError',JSCmulator.LastError,0,[]);
 
@@ -309,6 +305,10 @@ begin
   JSEmu.RegisterNativeFunction('HexDump',JSCmulator.HexDump,3,[]);
   JSEmu.RegisterNativeFunction('StackDump',JSCmulator.StackDump,2,[]);
 
+
+
+  // Register As Global Object
+  TBESEN(Self).ObjectGlobal.OverwriteData('Emu',BESENObjectValue(JSEmu),[bopaCONFIGURABLE]);
 
   Self.GarbageCollector.Protect(TBESENObject(JSEmu));
 end;
@@ -318,6 +318,8 @@ end;
 procedure TNewHook.ConstructObject(const ThisArgument: TBESENValue;
   Arguments: PPBESENValues; CountArguments: integer);
 begin
+  FOnEnter := nil;
+  FOnExit  := nil;
   args := TBESENObjectArray.Create(Self.Instance);
   inherited ConstructObject(ThisArgument,Arguments,CountArguments);
 end;
@@ -336,19 +338,35 @@ var
   API : TLibFunction;
   ExLib : TNewDll;
   Ordinal : UInt32;
+  Address : UInt64;
   lib,name : AnsiString;
   value : PBESENValue;
-  isOrdinal , API_OK : boolean;
+  isOrdinal , isAddress : boolean;
 begin
   lib := ''; name := '';
 
   ResultValue := BESENBooleanValue(False);
 
   if CountArguments <= 0  then
-    raise EBESENError.Create('install expect args (libname,ApiName) or (libname,Ordinal) or (Address {not implemented yet})');
+    raise EBESENError.Create('install expect args (libname,ApiName) or (libname,Ordinal) or (Address)');
 
-  isOrdinal := False; API_OK := False;
+  isAddress := False; isOrdinal := False;
 
+  if CountArguments = 1 then
+  begin
+     isAddress := True;
+     value := Arguments^[0];
+     if value^.ValueType = bvtNUMBER then
+     begin
+       Address := TBESEN(Instance).ToInt(value^);
+     end
+     else
+     begin
+      raise EBESENError.Create('install as Address expect args (Address) to be Number');
+      exit;
+     end;
+  end
+  else
   if CountArguments = 2 then
   begin
     value := Arguments^[1];
@@ -370,23 +388,37 @@ begin
     end;
   end;
 
-  if Assigned(self.OnCallBack) and (lib <> '') then
+  if Assigned(self.OnCallBack) then
   begin
     TBESEN(Instance).GarbageCollector.Protect(self.OnCallBack);
 
-    if isOrdinal then
-      Emulator.Hooks.ByOrdinal.AddOrSetValue(Ordinal,THookFunction.Create(
-         lib,name,Ordinal,isOrdinal,nil,Self
-      ))
+    if isAddress then
+    begin
+      Emulator.Hooks.ByAddr.AddOrSetValue(Address,THookFunction.Create(
+         '','',0,False,nil,Self));
+    end
     else
-      Emulator.Hooks.ByName.AddOrSetValue(name,THookFunction.Create(
+    begin
+     if lib.IsEmpty then exit; // just to make sure everything will work :D .
+
+     lib := LowerCase(ExtractFileNameWithoutExt(ExtractFileName(lib)));
+
+     if isOrdinal then
+     begin
+       Emulator.Hooks.ByOrdinal.AddOrSetValue(xxHash64Calc(lib + '.' + IntToStr(Ordinal)),THookFunction.Create(
+                lib,name,Ordinal,isOrdinal,nil,Self));
+     end
+     else
+     begin
+      Emulator.Hooks.ByName.AddOrSetValue(xxHash64Calc(lib + '.' + name),THookFunction.Create(
          lib,name,Ordinal,isOrdinal,nil,Self
       ));
+     end;
+    end;
 
     ResultValue := BESENBooleanValue(True);
   end;
 end;
-
 
 end.
 

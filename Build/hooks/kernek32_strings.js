@@ -93,30 +93,23 @@ WideCharToMultiByte.OnCallBack = function (Emu, API, ret) {
 
 
 	if (lpMultiByteStr !== 0 && cchWideChar !== 0){
-
-		var byte;
-		var i ;
-
-		// mem copy :V .
-		for (i = 0; i < cchWideChar; i++) {
-			byte = Emu.ReadWord(lpWideCharStr + i );
-			Emu.WriteByte(lpMultiByteStr + i , byte);
-		}
+		Emu.WriteStringA(lpMultiByteStr,Emu.ReadStringW(lpWideCharStr));
 	}
 
-	// console.log("WideCharToMultiByte({0}, {1}, 0x{2}, {3}, 0x{4}, {5}, {6}, {7})".format(
-	// 	CodePage,
-	// 	dwFlags,
-	// 	lpWideCharStr.toString(16),
-	// 	cchWideChar,
-	// 	lpMultiByteStr.toString(16),
-	// 	cbMultiByte,
-	// 	lpDefaultChar,
-	// 	lpUsedDefaultChar
-	// ));
+	log("WideCharToMultiByte({0}, {1}, 0x{2}, {3}, 0x{4}, {5}, {6}, {7})".format(
+		CodePage,
+		dwFlags,
+		lpWideCharStr.toString(16),
+		cchWideChar,
+		lpMultiByteStr.toString(16),
+		cbMultiByte,
+		lpDefaultChar,
+		lpUsedDefaultChar
+	));
 
 	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, cchWideChar); // just for now :P .
 	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+
 	return true; // we handled the Stack and other things :D .
 };
 
@@ -269,3 +262,173 @@ GetStringTypeW.install('api-ms-win-core-string-l1-1-0.dll', 'GetStringTypeW');
 ###################################################################################################
 */
 
+var lstrlen = new ApiHook();
+/*
+int lstrlen(
+  LPCWSTR lpString
+);
+*/
+lstrlen.OnCallBack = function (Emu, API, ret) {
+
+	Emu.pop(); // return addr
+
+	var Buf = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+
+	var data = API.IsWapi ? Emu.ReadWord(Buf) : Emu.ReadByte(Buf);
+	var len = 0;
+
+	while (data != 0) {
+		len +=1
+		data = API.IsWapi ? Emu.ReadWord(Buf+len) : Emu.ReadByte(Buf+len);
+	}
+
+	log("{0}(0x{1} = '{2}') = {3} ".format(
+		API.name,
+		Buf.toString(16),
+		Emu.IsWapi ? Emu.ReadStringW(Buf) : Emu.ReadStringA(Buf),
+		len
+	));
+
+
+    Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, len);
+    Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+	return true;
+};
+lstrlen.install('kernel32.dll', 'lstrlen');
+lstrlen.install('kernelbase.dll', 'lstrlenW');
+lstrlen.install('kernelbase.dll', 'lstrlenA');
+lstrlen.install('api-ms-win-core-misc-l1-1-0.dll', 'lstrlenW');
+lstrlen.install('api-ms-win-core-misc-l1-1-0.dll', 'lstrlenA');
+lstrlen.install('kernel32.dll', 'lstrlenW');
+lstrlen.install('kernel32.dll', 'lstrlenA');
+
+/*
+###################################################################################################
+###################################################################################################
+*/
+
+
+// var lstrcmpW = new ApiHook();
+/*
+int lstrcmpW(
+  LPCWSTR lpString1,
+  LPCWSTR lpString2
+);
+*/
+/*
+lstrcmpW.OnCallBack = function (Emu, API, ret) {
+
+	// lstrcmpW.args[0] = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.ReadDword(Emu.ReadReg(REG_ESP) + 4);
+	// lstrcmpW.args[1] = Emu.isx64 ? Emu.ReadReg(REG_RDX) : Emu.ReadDword(Emu.ReadReg(REG_ESP) + 8);
+
+	var lpString1 = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+	var lpString2 = Emu.isx64 ? Emu.ReadReg(REG_RDX) : Emu.pop();
+
+	Emu.HexDump(lpString1, len*2);
+	Emu.HexDump(lpString2, len*2);
+
+	// so just let the library handle it :D 
+	return true;
+};
+*/
+/*
+lstrcmpW.OnExit = function(Emu,API){
+
+	var len = Emu.ReadReg(REG_EAX);
+	var lpString1 = lstrcmpW.args[0];
+	var lpString2 = lstrcmpW.args[0];
+
+	warn("OnExit : lstrcmpW(0x{0},0x{1}) = {2} ".format(
+		lpString1.toString(16),
+		lpString2.toString(16),
+		Emu.ReadReg(REG_EAX)
+	));
+
+	Emu.HexDump(lpString1, len*2);
+	Emu.HexDump(lpString2, len*2);
+}
+
+lstrcmpW.install('kernelbase.dll', 'lstrcmpW');
+*/
+
+var lstrcmp = new ApiHook();
+lstrcmp.OnCallBack = function (Emu, API, ret) {
+
+	Emu.pop();
+
+	var Ptr1 = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+	var Ptr2 = Emu.isx64 ? Emu.ReadReg(REG_RDX) : Emu.pop();
+
+	var lpString1 = API.IsWapi ? Emu.ReadStringW(Ptr1) : Emu.ReadStringA(Ptr1);
+	var lpString2 = API.IsWapi ? Emu.ReadStringW(Ptr2) : Emu.ReadStringA(Ptr2);
+
+	 
+	warn("{0}(0x{1} = '{2}', 0x{3} = '{4}')".format(
+		API.name,
+		Ptr1.toString(16),
+		lpString1,
+		Ptr2.toString(16),
+		lpString2
+	));
+
+	if (Ptr1 !== 0) {
+		if (lpString1.length !== 0) {
+			Emu.HexDump(Ptr1, API.IsWapi ? lpString1.length * 2 : lpString1.length);
+		}
+	}
+	if (Ptr2 !== 0) {
+		if (lpString2.length !== 0) {
+			Emu.HexDump(Ptr2, API.IsWapi ? lpString2.length * 2 : lpString2.length);
+		}
+	}
+	var value = 0;
+
+	if (lpString1 !== lpString2) {
+		value = lpString1.length - lpString2.length;
+		if (value == 0) {
+			value = 1;
+		}
+	}
+
+	warn('lstrcmp = ',value)
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, value);
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+
+	// Emu.Stop();
+
+	return true;
+};
+lstrcmp.install('kernel32.dll', 'lstrcmpW');
+lstrcmp.install('kernel32.dll', 'lstrcmpA');
+lstrcmp.install('kernel32.dll', 'lstrcmp');
+
+/*
+###################################################################################################
+*/
+
+// var CompareStringW = new ApiHook();
+// CompareStringW.OnCallBack = function (Emu, API, ret) {
+// 	// let the lib handle it
+// 	return true;
+// };
+// CompareStringW.install('kernelbase.dll', 'CompareStringW');
+
+// var InternalLcidToName = new ApiHook();
+// InternalLcidToName.OnCallBack = function (Emu, API, ret) {
+// 	// let the lib handle it
+// 	return true;
+// };
+// InternalLcidToName.install('kernelbase.dll', 'InternalLcidToName');
+
+// var CompareStringEx = new ApiHook();
+// CompareStringEx.OnCallBack = function (Emu, API, ret) {
+// 	// let the lib handle it
+// 	return true;
+// };
+// CompareStringEx.install('kernelbase.dll', 'CompareStringEx');
+
+/*
+###################################################################################################
+###################################################################################################
+*/

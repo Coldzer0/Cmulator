@@ -1,4 +1,5 @@
 // this's a global format function
+
 String.prototype.format = function () {
     "use strict";
     var str = this.toString();
@@ -42,11 +43,14 @@ importScripts(
     'hooks/kernel32.js', 
     'hooks/kernel32_self.js',
     'hooks/kernel32_files.js',
+    'hooks/kernel32_desktop.js',
     'hooks/kernel32_threads.js',
     'hooks/kernek32_strings.js',
     'hooks/kernel32_processes.js',
     'hooks/user32.js',
     'hooks/advapi32.js',
+    'hooks/shell32.js',
+    'hooks/shlwapi.js',
     'hooks/urlmon.js',
     'hooks/ws2_32.js',
     'hooks/winhttp.js',
@@ -55,5 +59,14 @@ importScripts(
     'hooks/wtsapi32.js',
     'hooks/uxtheme.js',
     'hooks/ole32.js',
-    'hooks/lpk.js'
+    'hooks/lpk.js',
+    'hooks/crtdll.js',
+    'hooks/powrprof.js',
+    'hooks/gdi32.js',
+    'hooks/wininet.js'
 );
+
+// put custom scripts here :D
+importScripts('hooks/address.js');
+
+

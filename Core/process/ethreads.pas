@@ -6,12 +6,13 @@ interface
 
 uses
   Classes, SysUtils, math,
-  Unicorn_dyn, UnicornConst , X86Const ,
+  Unicorn_dyn, UnicornConst,
   TEP_PEB, Utils,
   Generics.Collections, Generics.Defaults;
 
 
 function InitTEB_PEB( uc : uc_engine; FS,GS,PEB,stack_address  : UInt64; stack_limit : UInt32; X64 : boolean): Boolean;
+procedure BuildPEB_Ldr(uc : uc_engine; offset : UInt64; X64 : boolean);
 
 implementation
  uses
@@ -92,8 +93,6 @@ begin
   Emulator.err := uc_mem_write_(uc,EntryNextOffset,@Entry32,SizeOf(Entry32));
   Utils.WriteStringW(EntryNextOffset + SizeOf(Entry32),path);
 
-  //DumpStack(EntryNextOffset,14);
-
   Result := Entry32;
 end;
 
@@ -150,8 +149,6 @@ begin
 
   Emulator.err := uc_mem_write_(uc,EntryNextOffset,@Entry,SizeOf(Entry));
   Utils.WriteStringW(EntryNextOffset + SizeOf(Entry),path);
-
-  //DumpStack(EntryNextOffset,14);
 
   Result := Entry;
 end;
@@ -224,6 +221,8 @@ begin
     flink64 += NewOffset;
     EntryNextOffset := flink64;
 
+
+
     // sort the libs .
     TLibsArray := Emulator.Libs.ToArray;
     TArrayHelper<Tlibs.TDictionaryPair>.Sort(
@@ -266,9 +265,6 @@ begin
       Writeln('[x] Error While Writing Ldr_data to memory ');
       halt(-1);
     end;
-
-    //Writeln('LDR_DATA64 :');
-    //DumpStack(offset,14);
 
   end // x64 .
   else
@@ -320,13 +316,10 @@ begin
         if index+1 = ModulesCount then
         begin
           //Writeln('[+] >>>>> last : ',TLibItem.Value.Dllname);
-
           end_of_list := flink32;
           flink32 := start_of_list;
           is_end := True;
         end;
-        //else
-          //Writeln('[+] Module : ',TLibItem.Value.Dllname);
 
         module32 := BuildPEB_Ldr_Entry32(uc,
                                          flink32,
@@ -346,12 +339,9 @@ begin
 
     if uc_mem_write_(uc,offset,@LDR_DATA32,SizeOf(PEB_LDR_DATA_32)) <> UC_ERR_OK then
     begin
-      Writeln('[x] Error While Writing Ldr_data to memory ');
+      Writeln('[x] Error While Writing Ldr_data to memory @ 0x',IntToHex(offset,8));
       halt(-1);
     end;
-
-    //Writeln('LDR_DATA32 :');
-    //DumpStack(offset,14);
   end;
 end;
 
@@ -370,11 +360,13 @@ begin
     PEB64.Ldr := PEB + SizeOf(TPEB_64);
     BuildPEB_Ldr(uc,PEB64.Ldr,X64);
 
-    PEB64.OSMajorVersion := RandomRange(10,20);
-    PEB64.OSMinorVersion := RandomRange(10,20);
-    PEB64.OSBuildNumber  := RandomRange(1000,2000);
-    PEB64.OSCSDVersion   := RandomRange(10,20);
-    PEB64.OSPlatformId   := RandomRange(10,20);
+    PEB64.OSMajorVersion := 10;//RandomRange(10,20);
+    PEB64.OSMinorVersion := 0;//RandomRange(10,20);
+    PEB64.OSBuildNumber  := 10240;//RandomRange(1000,2000);
+    PEB64.OSCSDVersion   := 0;//RandomRange(10,20);
+    PEB64.OSPlatformId   := 0;//RandomRange(10,20);
+
+    PEB64.NtGlobalFlag := 0;
 
     if uc_mem_write_(uc,PEB,@PEB64,SizeOf(PEB64)) <> UC_ERR_OK then
     begin
@@ -392,11 +384,13 @@ begin
     PEB32.Ldr := PEB + SizeOf(TPEB_32);
     BuildPEB_Ldr(uc,PEB32.Ldr,X64);
 
-    PEB32.OSMajorVersion := RandomRange(10,20);
-    PEB32.OSMinorVersion := RandomRange(10,20);
-    PEB32.OSBuildNumber  := RandomRange(1000,2000);
-    PEB32.OSCSDVersion   := RandomRange(10,20);
-    PEB32.OSPlatformId   := RandomRange(10,20);
+    PEB32.OSMajorVersion := 10;//RandomRange(10,20);
+    PEB32.OSMinorVersion := 0;//RandomRange(10,20);
+    PEB32.OSBuildNumber  := 10240;//RandomRange(1000,2000);
+    PEB32.OSCSDVersion   := 0;//RandomRange(10,20);
+    PEB32.OSPlatformId   := 0;//RandomRange(10,20);
+
+    PEB32.NtGlobalFlag := 0;
 
     if uc_mem_write_(uc,PEB,@PEB32,SizeOf(PEB32)) <> UC_ERR_OK then
     begin
@@ -436,6 +430,9 @@ begin
 
     err := uc_mem_write_(uc,GS,@TIB64,SizeOf(TTIB_64));
 
+
+    Emulator.PID := TIB64.ClientId.UniqueProcess;
+
     // custom for an x64 PE File .. just to make it continue run ..
     // remove it later .
     tmp := stack_address;
@@ -466,11 +463,13 @@ begin
 
     BuildPEB(uc,PEB,X64);
 
+
+    Emulator.PID := TIB32.ClientId.UniqueProcess;
+
     // for LocalThreadStorage .
     LS := stack_address;
     tmp := LS + 4;
     err := uc_mem_write_(uc,LS,@tmp,4);
-
     err := uc_mem_write_(uc,FS,@TIB32,SizeOf(TTIB_32));
     Result := err = UC_ERR_OK;
   end;

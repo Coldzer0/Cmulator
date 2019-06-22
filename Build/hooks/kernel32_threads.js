@@ -48,9 +48,11 @@ CloseHandle.OnCallBack = function (Emu, API, ret) {
 
 	var hObject = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
 
-	info('CloseHandle(0x',hObject.toString(16),')');
+	warn('CloseHandle(0x',hObject.toString(16),')');
 
-	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 1);
+	var value = hObject == 0xdeadc0de ? 0 : 1
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, value);
 	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
 	return true; // true if you handle it false if you want Emu to handle it and set PC .
 };
@@ -189,6 +191,7 @@ FlsAlloc.OnCallBack = function (Emu, API, ret) {
 
 FlsAlloc.install('kernel32.dll', 'FlsAlloc');
 FlsAlloc.install('api-ms-win-core-fibers-l1-1-0.dll', 'FlsAlloc');
+FlsAlloc.install('api-ms-win-core-fibers-l1-1-1.dll', 'FlsAlloc');
 
 /*
 ###################################################################################################
@@ -262,6 +265,7 @@ FlsSetValue.OnCallBack = function (Emu, API, ret) {
 
 FlsSetValue.install('kernel32.dll', 'FlsSetValue');
 FlsSetValue.install('api-ms-win-core-fibers-l1-1-0.dll', 'FlsSetValue');
+FlsSetValue.install('api-ms-win-core-fibers-l1-1-1.dll', 'FlsSetValue');
 
 /*
 ###################################################################################################
@@ -282,7 +286,7 @@ FlsGetValue.OnCallBack = function (Emu, API, ret) {
 
 	var value = -1;
 
-
+	info("FlsGetValue index : ",index)
 	if (index <= 128){
 		value = FlsSlots[index]
 	}
@@ -511,7 +515,8 @@ GetCurrentProcess.OnCallBack = function (Emu, API, ret) {
 };
 
 GetCurrentProcess.install('kernel32.dll', 'GetCurrentProcess');
-// GetCurrentProcessId.install('api-ms-win-core-processthreads-l1-1-0.dll', 'GetCurrentProcessId');
+GetCurrentProcess.install('api-ms-win-core-processthreads-l1-1-0.dll', 'GetCurrentProcess');
+
 /*
 ###################################################################################################
 ###################################################################################################
@@ -525,9 +530,9 @@ GetCurrentProcessId.OnCallBack = function (Emu, API, ret) {
 
 	Emu.pop(); // ret
 
-	print('GetCurrentProcessId = ', 1002);
+	print('GetCurrentProcessId = ', Emu.PID);
 
-	Emu.SetReg(REG_EAX, 1002); // DWORD for both x32 & x64 .
+	Emu.SetReg(REG_EAX, Emu.PID); // DWORD for both x32 & x64 .
 	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
 	return true; 
 };
@@ -558,7 +563,7 @@ IsWow64Process.OnCallBack = function (Emu, API, ret) {
 		Wow64Process.toString(16)
 	));
 
-	Emu.WriteDword(Wow64Process,1); // change it as you like :D 
+	Emu.WriteDword(Wow64Process,0); // change it as you like :D 
 
 	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 1);
 	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
@@ -609,17 +614,47 @@ CheckRemoteDebuggerPresent.install('kernel32.dll', 'CheckRemoteDebuggerPresent')
 var GetThreadLocale = new ApiHook();
 GetThreadLocale.OnCallBack = function (Emu, API, ret) {
 
-	// just let the library handle it :D 
-	// it reads it from TEB .
+// just let the library handle it :D 
+// it reads it from TEB .
 /*
-	// GetThreadLocale
+	// Kernelbase.GetThreadLocale
 	75E026BF | 64:A1 18000000 | mov eax,dword ptr fs:[18]     | 
 	75E026C5 | 8B80 C4000000  | mov eax,dword ptr ds:[eax+C4] |
 	75E026CB | C3             | ret                           |
 */
+
+	var kbase = Emu.GetModuleHandle('kernelbase.dll');
+	var kbase_GTL = Emu.GetProcAddr(kbase, 'GetThreadLocale');
+
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, kbase_GTL); 
 	return true;
 };
 GetThreadLocale.install('kernel32.dll', 'GetThreadLocale');
+
+/*
+###################################################################################################
+###################################################################################################
+*/
+
+var Heap32Next = new ApiHook();
+/*
+BOOL Heap32Next(
+  LPHEAPENTRY32 lphe
+);
+*/
+Heap32Next.OnCallBack = function (Emu, API, ret) {
+
+
+	Emu.pop();// return addr
+
+	var lphe = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 1);
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+	return true;
+};
+Heap32Next.install('kernel32.dll', 'Heap32Next');
+
 
 /*
 ###################################################################################################

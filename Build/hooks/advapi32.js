@@ -267,6 +267,7 @@ RegCloseKey.OnCallBack = function (Emu, API,ret) {
 };
 RegCloseKey.install('advapi32.dll', 'RegCloseKey');
 
+RegCloseKey.install('api-ms-win-core-localregistry-l1-1-0.dll', 'RegCloseKey');
 
 /*
 ###################################################################################################
@@ -371,6 +372,10 @@ RegOpenKeyEx.OnCallBack = function (Emu, API, ret) {
 RegOpenKeyEx.install('advapi32.dll', 'RegOpenKeyExA');
 RegOpenKeyEx.install('advapi32.dll', 'RegOpenKeyExW');
 
+
+RegOpenKeyEx.install('api-ms-win-core-localregistry-l1-1-0.dll', 'RegOpenKeyExA');
+RegOpenKeyEx.install('api-ms-win-core-localregistry-l1-1-0.dll', 'RegOpenKeyExW');
+
 /*
 ###################################################################################################
 ###################################################################################################
@@ -429,6 +434,10 @@ RegQueryValueEx.OnCallBack = function (Emu, API, ret) {
 RegQueryValueEx.install('advapi32.dll', 'RegQueryValueExA');
 RegQueryValueEx.install('advapi32.dll', 'RegQueryValueExW');
 
+RegQueryValueEx.install('api-ms-win-core-localregistry-l1-1-0.dll', 'RegQueryValueExA');
+RegQueryValueEx.install('api-ms-win-core-localregistry-l1-1-0.dll', 'RegQueryValueExW');
+
+
 /*
 ###################################################################################################
 ###################################################################################################
@@ -474,17 +483,89 @@ EventRegister.install('advapi32.dll', 'EventRegister');
 */
 
 
+var GetSecurityDescriptorControl = new ApiHook();
+/*
+BOOL GetSecurityDescriptorControl(
+  PSECURITY_DESCRIPTOR         pSecurityDescriptor,
+  PSECURITY_DESCRIPTOR_CONTROL pControl,
+  LPDWORD                      lpdwRevision
+);
+*/
+GetSecurityDescriptorControl.OnCallBack = function (Emu, API, ret) {
+
+	Emu.pop(); // pop return address ..
+
+	var pSecurityDescriptor = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+	var pControl  			= Emu.isx64 ? Emu.ReadReg(REG_EDX) : Emu.pop();
+	var lpdwRevision 		= Emu.isx64 ? Emu.ReadReg(REG_R8)  : Emu.pop();
+
+	log("GetSecurityDescriptorControl(0x{0}, 0x{1}, 0x{2})".format(
+		pSecurityDescriptor.toString(16),
+		pControl.toString(16),
+		lpdwRevision.toString(16)
+	));
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 1); // Returns nonzero if successful.
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+	return true; // we handled the Stack and other things :D .
+};
+
+GetSecurityDescriptorControl.install('advapi32.dll', 'GetSecurityDescriptorControl');
+
+/*
+###################################################################################################
+###################################################################################################
+*/
 
 
+var IsTokenRestricted = new ApiHook();
+/*
+BOOL IsTokenRestricted(
+  HANDLE TokenHandle
+);
+*/
+IsTokenRestricted.OnCallBack = function (Emu, API, ret) {
+
+	Emu.pop(); // pop return address ..
+
+	var TokenHandle = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+
+	log("IsTokenRestricted(0x{0})".format(
+		TokenHandle.toString(16)
+	));
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 0);
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+	return true; // we handled the Stack and other things :D .
+};
+
+IsTokenRestricted.install('advapi32.dll', 'IsTokenRestricted');
+
+/*
+###################################################################################################
+###################################################################################################
+*/
+
+// advapi32.dll.CryptAcquireContextA
+
+var AdvGen = new ApiHook();
+AdvGen.OnCallBack = function (Emu, API, ret) {
+
+	return true; // we handled the Stack and other things :D .
+};
+AdvGen.OnExit = function(Emu,API){
+
+	warn("CryptAcquireContextA() = 0x", Emu.isx64 ? Emu.ReadReg(REG_RAX) : Emu.ReadReg(REG_EAX))
+}
+
+AdvGen.install('advapi32.dll', 'CryptAcquireContextA');
+AdvGen.install('cryptsp.dll' , 'CryptAcquireContextA');
 
 
-
-
-
-
-
-
-
+/*
+###################################################################################################
+###################################################################################################
+*/
 
 
 

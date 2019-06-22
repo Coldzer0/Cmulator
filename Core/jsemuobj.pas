@@ -9,7 +9,7 @@ uses
   {$I besenunits.inc},
   FnHook,Emu,Utils,
   Unicorn_dyn, UnicornConst, X86Const,
-  FileUtil,LazUTF8,PE_Loader;
+  LazFileUtils,LazUTF8,PE_Loader;
 
 type
 
@@ -267,15 +267,17 @@ begin
     else
       raise EBESENError.Create('LoadLibrary Arg must be String ! - Ex: LoadLibrary(''kernel32.dll'')');
 
-    Libname := Trim(ExtractFileNameWithoutExt(LowerCase(Libname)) + '.dll');
+    Libname := Trim(ExtractFileNameWithoutExt(LowerCase(ExtractFileName(Libname))) + '.dll');
 
     if Emulator.Libs.TryGetValue(Libname,Lib) then
-       ResultValue := BESENNumberValue(Lib.BaseAddress)
+    begin
+      ResultValue := BESENNumberValue(Lib.BaseAddress);
+    end
     else
     begin
       if PE_Loader.load_sys_dll(Emulator.uc,Libname) then
         if Emulator.Libs.TryGetValue(Libname,Lib) then
-           ResultValue := BESENNumberValue(Lib.BaseAddress)
+           ResultValue := BESENNumberValue(Lib.BaseAddress);
     end;
   end;
 end;

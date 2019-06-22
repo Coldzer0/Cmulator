@@ -42,6 +42,9 @@ __recovery/
 *.bak
 
 # unwanted folders :D
+samples/VMProtect
+PEParser
+Core/Duktabe
 unicorn-engine-pascal
 CTF
 GDT

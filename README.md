@@ -1,5 +1,8 @@
 # Cmulator - Scriptable x86 RE Sandbox Emulator
 
+<h3> <b>Call for LOGO</b> , if you good at design give it a try and Create Logo for Cmulator <br>
+your name will apper in <b>Acknowledgements</b>
+
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
 <h2>
@@ -583,7 +586,7 @@ set the dll folders to where you stored your windows dlls and JS Main File .
 
 <hr>
 
-## Resources :
+## Acknowledgements & Resources :
 <b>
 
 this work inspired by :

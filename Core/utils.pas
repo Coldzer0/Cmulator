@@ -4,10 +4,14 @@ unit Utils;
 interface
 
 uses
-  Classes, SysUtils,strutils,FileUtil,
+  Classes, SysUtils,strutils,LazFileUtils,
   Unicorn_dyn, UnicornConst, X86Const,
   {$i besenunits.inc},
-  Capstone, CapstoneCmn, CapstoneApi;
+  Zydis,
+  Zydis.Exception,
+  Zydis.Decoder,
+  Zydis.Formatter,
+  xxHash;
 
 type
   TArray = Array of byte;
@@ -20,7 +24,7 @@ function reg_read_x64(uc : uc_engine; reg : integer): UInt64;
 
 function reg_write_x64(uc : uc_engine; reg: integer; value : UInt64): boolean;
 function reg_write_x32(uc : uc_engine; reg: integer; value : UInt32): boolean;
-function DisAsm(code : Pointer; Addr : UInt64; Size : UInt32) : TCsInsn;
+function DisAsm(code : Pointer; Addr : UInt64; Size : UInt32) : TZydisDecodedInstruction;
 
 
 // Emulator JS Wrappers .
@@ -135,9 +139,6 @@ begin
     inc(Result);
     inc(Addr);
   end;
-  // write null byte may overide another string starting byte ! .
-  //ch := 0;
-  //Emulator.err := uc_mem_write_(Emulator.uc,Addr+1,@ch,1);
 end;
 
 function WriteStringW( Addr : UInt64; Str : AnsiString): UInt32;
@@ -159,9 +160,6 @@ begin
     inc(Result);
     inc(Addr,2);
   end;
-  // write null byte may overide another string starting byte ! .
-  //ch := 0;
-  //Emulator.err := uc_mem_write_(Emulator.uc,Addr+2,@ch,2);
 end;
 
 function WriteMem(Addr : UInt64; value : Pointer; len : UInt32) : boolean;
@@ -230,11 +228,11 @@ var
   Stack : UInt64;
 begin
   Result := False; Stack := 0;
-  Emulator.err := uc_reg_read(Emulator.uc,ifthen(Emulator.PE_x64,UC_X86_REG_RSP,UC_X86_REG_ESP),@Stack);
+  Emulator.err := uc_reg_read(Emulator.uc,ifthen(Emulator.isx64,UC_X86_REG_RSP,UC_X86_REG_ESP),@Stack);
   if Emulator.err = UC_ERR_OK then
   begin
     Stack -= Emulator.img.ImageWordSize;// sub StackPointer,{4 or 8} .
-    Emulator.err := uc_reg_write(Emulator.uc,ifthen(Emulator.PE_x64,UC_X86_REG_RSP,UC_X86_REG_ESP),@Stack);
+    Emulator.err := uc_reg_write(Emulator.uc,ifthen(Emulator.isx64,UC_X86_REG_RSP,UC_X86_REG_ESP),@Stack);
     if Emulator.err = UC_ERR_OK then
     begin
       Emulator.err := uc_mem_write_(Emulator.uc,Stack,@value,Emulator.Img.ImageWordSize);
@@ -250,12 +248,12 @@ var
   Stack : UInt64;
 begin
   Stack := 0; Result := 0;
-  Emulator.err := uc_reg_read(Emulator.uc,ifthen(Emulator.PE_x64,UC_X86_REG_RSP,UC_X86_REG_ESP),@Stack);
+  Emulator.err := uc_reg_read(Emulator.uc,ifthen(Emulator.isx64,UC_X86_REG_RSP,UC_X86_REG_ESP),@Stack);
   Emulator.err := uc_mem_read_(Emulator.uc,Stack,@Result,Emulator.Img.ImageWordSize);
   if Emulator.err = UC_ERR_OK then
   begin
     Stack += Emulator.img.ImageWordSize;
-    Emulator.err := uc_reg_write(Emulator.uc,ifthen(Emulator.PE_x64,UC_X86_REG_RSP,UC_X86_REG_ESP),@Stack);
+    Emulator.err := uc_reg_write(Emulator.uc,ifthen(Emulator.isx64,UC_X86_REG_RSP,UC_X86_REG_ESP),@Stack);
   end;
 end;
 
@@ -267,7 +265,7 @@ begin
   if LowerCase(Module) = LowerCase(ExtractFileName(Emulator.Img.FileName)) then
      Exit(Emulator.Img.ImageBase);
 
-  Module := Trim(ExtractFileNameWithoutExt(LowerCase(Module)) + '.dll');
+  Module := Trim(ExtractFileNameWithoutExt(LowerCase(ExtractFileName(Module))) + '.dll');
   if Emulator.Libs.TryGetValue(Module,Lib) then
      Result := Lib.BaseAddress;
 end;
@@ -276,12 +274,15 @@ function GetProcAddr(Handle : UInt64; FnName : String): UInt64;
 var
   Lib : TNewDll;
   API : TLibFunction;
+  hash : Int64;
 begin
+  Result := 0;
   for Lib in Emulator.Libs.Values do
   begin
     if lib.BaseAddress = Handle then
     begin
-      if lib.FnByName.TryGetValue(FnName,API) then
+      hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(lib.Dllname))) + '.' + FnName);
+      if lib.FnByName.TryGetValue(Hash,API) then
       begin
         Result := API.VAddress;
         break;
@@ -290,32 +291,30 @@ begin
   end;
 end;
 
-function DisAsm(code : Pointer; Addr : UInt64; Size : UInt32) : TCsInsn;
+function DisAsm(code : Pointer; Addr : UInt64; Size : UInt32) : TZydisDecodedInstruction;
 var
-  disasm: TCapstone;
-  insn: TCsInsn;
-  err : cs_err;
+  Decoder: Zydis.Decoder.TZydisDecoder;
 begin
   Initialize(Result);
-  FillByte(Result,SizeOf(Result),0);
-  disasm := TCapstone.Create;
   try
-    if Emulator.PE_x64 then
-       disasm.Mode := [csm64]
-    else
-       disasm.Mode := [csm32];
-
-    disasm.Arch := csaX86;
-    err := disasm.Open(code,Size);
-    if err = CS_ERR_OK then begin
-      while disasm.GetNext(addr, insn) do begin
-        Result := insn;
-      end;
-    end else begin
-      WriteLn('[x] Error in cs_open : Err num ',err);
+    if (ZydisGetVersion <> ZYDIS_VERSION) then
+    begin
+      raise Exception.Create('Invalid Zydis version');
     end;
-  finally
-    disasm.Free;
+
+    if Emulator.isx64 then
+      Decoder := Zydis.Decoder.TZydisDecoder.Create(ZYDIS_MACHINE_MODE_LONG_64,ZYDIS_ADDRESS_WIDTH_64)
+    else
+      Decoder := Zydis.Decoder.TZydisDecoder.Create(ZYDIS_MACHINE_MODE_LONG_COMPAT_32,ZYDIS_ADDRESS_WIDTH_32);
+
+    try
+      Decoder.DecodeBuffer(code, Size, Addr,Result);
+    finally
+      Decoder.Free;
+    end;
+  except
+    on E: Exception do
+      Writeln(E.ClassName, ': ', E.Message);
   end;
 end;
 
@@ -353,9 +352,9 @@ const
 begin
   Result := 0;
   if Addr = 0 then
-     Emulator.err := uc_reg_read(Emulator.uc,ifthen(Emulator.PE_x64,UC_X86_REG_RSP,UC_X86_REG_ESP),@Addr);
+     Emulator.err := uc_reg_read(Emulator.uc,ifthen(Emulator.isx64,UC_X86_REG_RSP,UC_X86_REG_ESP),@Addr);
   Writeln('============ Mem Dump ==============');
-  for i := 0 to Size do
+  for i := 0 to Pred(Size) do
   begin
     Emulator.err := uc_mem_read_(Emulator.uc,Addr + (i * Emulator.Img.ImageWordSize),
                  @Result,Emulator.Img.ImageWordSize);
@@ -370,7 +369,7 @@ begin
     if IsStringPrintable(unicode) then
        Str := unicode;
 
-    Writeln(Format(IfThen(Emulator.PE_x64,b64,b32),[Addr + ((i * Emulator.Img.ImageWordSize)),Result,Str]));
+    Writeln(Format(IfThen(Emulator.isx64,b64,b32),[Addr + ((i * Emulator.Img.ImageWordSize)),Result,Str]));
   end;
   Writeln('====================================');
   Writeln();
@@ -390,9 +389,9 @@ begin
     if ((i mod COLS) = 0) then
     begin
       if VirtualAddr <> 0 then
-         Write(hexStr(UInt64(VirtualAddr+i),ifthen(Emulator.PE_x64,16,8)),' : ')
+         Write(hexStr(UInt64(VirtualAddr+i),ifthen(Emulator.isx64,16,8)),' : ')
       else
-         Write(hexStr(UInt64(mem+i),ifthen(Emulator.PE_x64,16,8)),' : ');
+         Write(hexStr(UInt64(mem+i),ifthen(Emulator.isx64,16,8)),' : ');
     end;
 
     CH := Chr(Byte((mem + i)^));

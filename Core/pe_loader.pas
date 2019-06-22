@@ -6,10 +6,10 @@ interface
 
 uses
   Classes, SysUtils, strutils,
-  FileUtil, LazUTF8, Crt,
+  LazFileUtils, LazUTF8, Crt,
   Unicorn_dyn, UnicornConst, X86Const,
-  Utils, FnHook,
-  Generics.Collections,
+  Generics.Collections,Generics.Defaults,
+  Utils, FnHook,xxHash,EThreads,TEP_PEB,math,
   PE.Common, // using TRVA .
   PE.Image,
   PE.Section,
@@ -35,7 +35,7 @@ procedure Init_dlls();
 
 implementation
   uses
-    Globals;
+    Globals,Emu;
 
 
 procedure InitTLS(uc : uc_engine; img : TPEImage);
@@ -86,14 +86,13 @@ var
   HookFn : TLibFunction;
   Lib : TPEImportLibrary;
   Fn  : TPEImportFunction;
+  Hash : UInt64;
   rva , FuncAddr : TRVA;
-  index : Integer;
   err : uc_err;
-  ret : Pointer;
   path : UnicodeString;
   Dll : string;
 begin
-  index := 0; ret := nil; FuncAddr := 0;
+  FuncAddr := 0;
   if VerboseEx then
   begin
     Writeln('[---------------------------------------]');
@@ -103,16 +102,16 @@ begin
   // Scan libraries.
   for Lib in Img.Imports.Libs do
   begin
-    Dll := ExtractFileNameWithoutExt(lib.Name) + '.dll';
+    Dll := ExtractFileNameWithoutExt(ExtractFileName(lib.Name)) + '.dll';
 
-    if Emulator.PE_x64 then
+    if Emulator.isx64 then
        Path := IncludeTrailingPathDelimiter(win64) + UnicodeString(LowerCase(Trim(Dll)))
     else
        Path := IncludeTrailingPathDelimiter(win32) + UnicodeString(LowerCase(Trim(Dll)));
 
     if not FileExists(Path) then
     begin
-      Writeln('"',Dll,'" not found !');
+      Writeln('"',Dll,'" not found ! [1]');
       Writeln();
       halt(-1);
     end;
@@ -124,6 +123,7 @@ begin
         Writeln();
         Writeln('[>] ',ExtractFileName(Img.FileName),' Import : ', Dll,#10);
       end;
+
       if not load_sys_dll(uc,LowerCase(Dll)) then
       begin
         Writeln('Error While Loading Lib : ',Dll);
@@ -144,14 +144,16 @@ begin
     begin
       if Fn.Name <> '' then
       begin
-        if SysDll.FnByName.TryGetValue(Fn.Name,HookFn) then
+        Hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(Lib.Name))) + '.' + Fn.Name);
+        if SysDll.FnByName.TryGetValue(Hash,HookFn) then
         begin
           FuncAddr := HookFn.VAddress;
         end;
       end
       else
       begin
-        if SysDll.FnByOrdinal.TryGetValue(Fn.Ordinal,HookFn) then
+        Hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(Lib.Name))) + '.' + IntToStr(Fn.Ordinal));
+        if SysDll.FnByOrdinal.TryGetValue(Hash,HookFn) then
         begin
           FuncAddr := HookFn.VAddress;
         end;
@@ -205,8 +207,25 @@ begin
 
     if not VerboseExx then // if not VerboseExx don't show stuff :D .
        Emulator.RunOnDll := True;
+
+    Emulator.ResetEFLAGS();
     uc_emu_start(uc,lib.EntryPoint,lib.ImageSize,0,0);
     Emulator.RunOnDll := False;
+  end;
+end;
+
+
+function GetModulesCount(TLibsArray : TLibs) : Integer;
+var
+  LibItem : TNewDll;
+begin
+  Result := 0;
+  for LibItem in TLibsArray.Values do
+  begin
+    if not LibItem.Dllname.StartsWith('api-ms-win') then
+    begin
+      Inc(Result);
+    end;
   end;
 end;
 
@@ -214,11 +233,13 @@ procedure Init_dlls();
 var
   lib : TNewDll;
 begin
+
   TextColor(LightMagenta);
-  Writeln(Format('Initiating %d Libraries ...',[Emulator.Libs.Count]));
+  Writeln(Format('Initiating %d Libraries ...',[GetModulesCount(Emulator.Libs)]));
   NormVideo;
   for lib in Emulator.Libs.Values do
   begin
+    if not Lib.Dllname.StartsWith('api-ms-win') then
     InitDll(Emulator.uc,lib);
   end;
 end;
@@ -234,24 +255,23 @@ var
   err : uc_err;
   ByAddr    : TFastHashMap<UInt64, TLibFunction>;
   ByOrdinal : TFastHashMap<UInt64, TLibFunction>;
-  ByName    : TFastHashMap<String, TLibFunction>;
-  FName, LibName , FWName : string;
-  tmpAPI : TLibFunction;
-  tmpLib : TNewDll;
+  ByName    : TFastHashMap<UInt64, TLibFunction>;
+  FName, LibName , FWName, FWLib,FWAPI : string;
+  Hash : UInt64;
   IsOrdinal : Boolean;
-  ret : Pointer;
+  //ret : Pointer;
 begin
 
   FLibrary := nil;
+  FWLib := '';
   Result := false;
   Delta := 0;
 
-  Dll := LowerCase(ExtractFileNameWithoutExt(Dll) + '.dll');
-
+  Dll := LowerCase(ExtractFileNameWithoutExt(ExtractFileName(Dll)) + '.dll');
   if Emulator.Libs.ContainsKey(Trim(Dll)) then
     Exit(True);
 
-  if Emulator.PE_x64 then
+  if Emulator.isx64 then
      Path := IncludeTrailingPathDelimiter(win64) + UnicodeString(LowerCase(Trim(Dll)))
   else
      Path := IncludeTrailingPathDelimiter(win32) + UnicodeString(LowerCase(Trim(Dll)));
@@ -259,8 +279,8 @@ begin
 
   if FileExists(Path) then
   begin
-    ret := AllocMem(UC_PAGE_SIZE);
-    FillByte(ret^,UC_PAGE_SIZE,$C3);
+    //ret := AllocMem(UC_PAGE_SIZE);
+    //FillByte(ret^,UC_PAGE_SIZE,$C3);
 
     LibName := Trim(Dll);
 
@@ -319,7 +339,7 @@ begin
 
 
       //================================================================//
-      // Relocations . uncomment after implement apisetschema Forwarder //
+      // Relocations //
       Delta := DLL_BASE - img.ImageBase;
       if Delta <> 0 then
       begin
@@ -344,29 +364,29 @@ begin
       inc(Emulator.DLL_NEXT_LOAD, img.SizeOfImage);
 
       //================================================================//
-      HOOK_LIB := (HOOK_BASE + (HOOK_INDEX * UC_PAGE_SIZE));
-      HOOK_Fn := HOOK_LIB;
-      err := uc_mem_map(uc,HOOK_LIB,UC_PAGE_SIZE,UC_PROT_ALL);
-      if err <> UC_ERR_OK then
-      begin
-        FreeAndNil(FLibrary);
-        Writeln('Lib : ',LibName);
-        Writeln('Error While Map the Hook Base for lib base , err : ',uc_strerror(err));
-        halt(-1);
-      end;
-      err := uc_mem_write_(uc,HOOK_LIB,ret,UC_PAGE_SIZE);
-      if err <> UC_ERR_OK then
-      begin
-        FreeAndNil(FLibrary);
-        Writeln('Lib : ',LibName);
-        Writeln('Error While Write the new Hook Base for lib , err : ',uc_strerror(err));
-        halt(-1);
-      end;
+      //HOOK_LIB := (HOOK_BASE + (HOOK_INDEX * UC_PAGE_SIZE));
+      //HOOK_Fn := HOOK_LIB;
+      //err := uc_mem_map(uc,HOOK_LIB,UC_PAGE_SIZE,UC_PROT_ALL);
+      //if err <> UC_ERR_OK then
+      //begin
+      //  FreeAndNil(FLibrary);
+      //  Writeln('Lib : ',LibName);
+      //  Writeln('Error While Map the Hook Base for lib base , err : ',uc_strerror(err));
+      //  halt(-1);
+      //end;
+      //err := uc_mem_write_(uc,HOOK_LIB,ret,UC_PAGE_SIZE);
+      //if err <> UC_ERR_OK then
+      //begin
+      //  FreeAndNil(FLibrary);
+      //  Writeln('Lib : ',LibName);
+      //  Writeln('Error While Write the new Hook Base for lib , err : ',uc_strerror(err));
+      //  halt(-1);
+      //end;
     //================================================================//
 
       ByAddr    := TFastHashMap<UInt64, TLibFunction>.Create();
       ByOrdinal := TFastHashMap<UInt64, TLibFunction>.Create();
-      ByName    := TFastHashMap<String, TLibFunction>.Create();
+      ByName    := TFastHashMap<UInt64, TLibFunction>.Create();
 
       for sym in img.ExportSyms.Items do
       begin
@@ -382,14 +402,6 @@ begin
           begin
             FName := IntToStr(sym.Ordinal);
           end;
-          // API is Forwarded ..
-          FWName := '';
-          if sym.Forwarder then
-          begin
-            FWName := sym.ForwarderName;
-            VAddr := HOOK_Fn;
-            inc(HOOK_Fn,img.ImageWordSize);
-          end;
 
           // (ByAddr.ContainsKey(VAddr) cuz some function has same Addr like .
           {
@@ -399,19 +411,28 @@ begin
            VA: $7DD60000; RVA: $0; ord: $2; name: "InterlockedPushListSList"; fwd: "NTDLL.RtlInterlockedPushListSList"
            this one is Forwarded .
           }
-          if ByAddr.ContainsKey(VAddr) then
+
+          FWName := '';
+          if sym.Forwarder then
           begin
-            VAddr := HOOK_Fn;
-            inc(HOOK_Fn,img.ImageWordSize);
+            // API is Forwarded ..
+            FWName := sym.ForwarderName;
+            sym.GetForwarderLibAndFuncName(FWLib,FWAPI);
+            VAddr := Utils.GetProcAddr(GetModulehandle(FWLib),FWAPI);
           end;
 
+          if not ByAddr.ContainsKey(VAddr) then
           ByAddr.Add(VAddr,TLibFunction.Create(LibName,sym.Name,VAddr,sym.Ordinal,nil,
                                           sym.Forwarder,IsOrdinal,FWName));
 
-          ByOrdinal.Add(sym.Ordinal,TLibFunction.Create(LibName,sym.Name,VAddr,sym.Ordinal,nil,
+          Hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(LibName))) + '.' + IntToStr(sym.Ordinal));
+
+          ByOrdinal.Add(Hash,TLibFunction.Create(LibName,sym.Name,VAddr,sym.Ordinal,nil,
                                           sym.Forwarder,IsOrdinal,FWName));
 
-          ByName.Add(FName,TLibFunction.Create(LibName,sym.Name,VAddr,sym.Ordinal,nil,
+          Hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(LibName))) + '.' + Fname);
+
+          ByName.Add(Hash,TLibFunction.Create(LibName,sym.Name,VAddr,sym.Ordinal,nil,
                                           sym.Forwarder,IsOrdinal,FWName));
 
           //if VerboseExx then
@@ -424,18 +445,23 @@ begin
       Emulator.Libs.Add(LibName,TNewDll.Create((DLL_BASE + img.EntryPointRVA),LibName,DLL_BASE,img.SizeOfImage,ByAddr,ByOrdinal,ByName));
     finally
       inc(Emulator.DLL_NEXT_LOAD, img.SizeOfImage);
-      inc(HOOK_INDEX);
+      //inc(HOOK_INDEX);
 
       // TODO: implement apisetschema Forwarder .
       FixDllImports(uc,img,DLL_BASE);
+
+      // ReBuild Ldr for every new module loaded .
+      if Emulator.PEB > 0 then // Check if already set ..
+         BuildPEB_Ldr(uc,Emulator.PEB + IfThen(Emulator.isx64,SizeOf(TPEB_64),SizeOf(TPEB_32)),Emulator.isx64);
+
       img.Free;
     end;
-    if ret <> nil then
-       Freemem(ret,UC_PAGE_SIZE);
+    //if ret <> nil then
+    //   Freemem(ret,UC_PAGE_SIZE);
   end
   else
   begin
-    Writeln(Format('Library %s not found !',[Dll])); Writeln();
+    Writeln(Format('Library "%s" not found ! [2]',[Dll])); Writeln();
     halt(-1);
   end;
 
@@ -448,14 +474,13 @@ var
   HookFn : TLibFunction;
   Lib : TPEImportLibrary;
   Fn  : TPEImportFunction;
+  Hash : UInt64;
   rva , FuncAddr : TRVA;
-  index : Integer;
   err : uc_err;
-  ret : Pointer;
   path : UnicodeString;
   Dll : string;
 begin
-  index := 0; ret := nil; FuncAddr := 0;
+  FuncAddr := 0;
 
   Writeln('[---------------------------------------]');
   Writeln('[            Fixing PE Imports          ]'); Writeln();
@@ -463,15 +488,15 @@ begin
   // Scan libraries.
   for Lib in Img.Imports.Libs do
   begin
-    Dll := ExtractFileNameWithoutExt(lib.Name) + '.dll';
-    if Emulator.PE_x64 then
+    Dll := ExtractFileNameWithoutExt(ExtractFileName(lib.Name)) + '.dll';
+    if Emulator.isx64 then
        Path := IncludeTrailingPathDelimiter(win64) + UnicodeString(LowerCase(Trim(Dll)))
     else
        Path := IncludeTrailingPathDelimiter(win32) + UnicodeString(LowerCase(Trim(Dll)));
 
     if not FileExists(Path) then
     begin
-      Writeln('"',Dll,'" not found !');
+      Writeln('"',Dll,'" not found ! [3]');
       halt(-1);
     end;
     // If library not loaded then load it .
@@ -504,14 +529,16 @@ begin
     begin
       if Fn.Name <> '' then
       begin
-        if SysDll.FnByName.TryGetValue(Fn.Name,HookFn) then
+        Hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(Lib.Name))) + '.' + Fn.Name);
+        if SysDll.FnByName.TryGetValue(Hash,HookFn) then
         begin
           FuncAddr := HookFn.VAddress;
         end;
       end
       else
       begin
-        if SysDll.FnByOrdinal.TryGetValue(Fn.Ordinal,HookFn) then
+        Hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(Lib.Name))) + '.' + IntToStr(Fn.Ordinal));
+        if SysDll.FnByOrdinal.TryGetValue(Hash,HookFn) then
         begin
           FuncAddr := HookFn.VAddress;
         end;
@@ -521,7 +548,7 @@ begin
       begin
         Writeln(Format('%s',[IfThen(fn.Name <> '',fn.Name,('#'+IntToStr(Fn.Ordinal)))]));
         write('  '); // indent
-        writeln(format('Real rva: 0x%-8x - New : 0x%-8x',[rva,FuncAddr]));
+        writeln(format('Real func rva: 0x%-8x - New : 0x%-8x',[rva,FuncAddr]));
       end;
 
       err := uc_mem_write_(uc,rva,@FuncAddr,Img.ImageWordSize);
@@ -542,7 +569,6 @@ function MapToMemory(PE : TPEImage) : TMemoryStream;
 var
   tmp : TMemoryStream;
   Offset : UInt64;
-  i : Integer;
   sec : TPESection;
 begin
   Result := TMemoryStream.Create;
@@ -641,6 +667,8 @@ var
   path : UnicodeString;
   Dll : string;
   PseFile: TPseFile;
+  Hash : UInt64;
+  //index : integer;
 begin
   TPseFile.RegisterFile(TPsePeFile);
   PseFile := TPseFile.GetInstance(FilePath, false);
@@ -655,18 +683,18 @@ begin
   // Scan libraries.
   for imp in PseFile.ImportTable do
   begin
-    Dll := ExtractFileNameWithoutExt(imp.DllName) + '.dll';
+    Dll := ExtractFileNameWithoutExt(ExtractFileName(imp.DllName)) + '.dll';
 
     Writeln('[+] Fix IAT for : ',Dll);
 
-    if Emulator.PE_x64 then
+    if Emulator.isx64 then
        Path := IncludeTrailingPathDelimiter(win64) + UnicodeString(LowerCase(Trim(Dll)))
     else
        Path := IncludeTrailingPathDelimiter(win32) + UnicodeString(LowerCase(Trim(Dll)));
 
     if not FileExists(Path) then
     begin
-      Writeln('"',Dll,'" not found !');
+      Writeln('"',Dll,'" not found ! [4]');
       halt(-1);
     end;
     // If library not loaded then load it .
@@ -692,14 +720,16 @@ begin
     begin
       if api.Name <> '' then
       begin
-        if SysDll.FnByName.TryGetValue(api.Name,HookFn) then
+        Hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(imp.DllName))) + '.' + api.Name);
+        if SysDll.FnByName.TryGetValue(Hash,HookFn) then
         begin
           FuncAddr := HookFn.VAddress;
         end;
       end
       else
       begin
-        if SysDll.FnByOrdinal.TryGetValue(api.Hint,HookFn) then
+        Hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(imp.DllName))) + '.' + IntToStr(api.Hint));
+        if SysDll.FnByOrdinal.TryGetValue(Hash,HookFn) then
         begin
           FuncAddr := HookFn.VAddress;
         end;
@@ -725,6 +755,7 @@ begin
   end;
   Writeln('[---------------------------------------]');
   Writeln();
+  FreeAndNil(PseFile);
 end;
 
 function MapToPEMemory(var PE : TPEImage; Image : TMemoryStream; max_virtualAddr : UInt64 = $10000000) : TMemoryStream;
@@ -822,8 +853,8 @@ begin
 end;
 
 initialization
-  HOOK_BASE := $30000;
-  HOOK_INDEX := 0;
+  //HOOK_BASE := $30000;
+  //HOOK_INDEX := 0;
 
 end.
 

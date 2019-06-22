@@ -5,9 +5,24 @@
 
 'use strict';
 
+// user32.dll.UserClientDllInitialize
+
+var UserClientDllInitialize = new ApiHook();
+UserClientDllInitialize.OnCallBack = function (Emu, API, ret) {
+	// let the lib handle it
+	return true;
+};
+UserClientDllInitialize.install('user32.dll', 'UserClientDllInitialize');
+
+/*
+###################################################################################################
+###################################################################################################
+*/
 var MessageBox = new ApiHook();
 
 MessageBox.OnCallBack = function (Emu, API, ret) {
+
+	// Emu.StackDump(Emu.ReadReg(REG_ESP),5);
 
 	Emu.pop(); // pop return address ..
 	
@@ -16,12 +31,14 @@ MessageBox.OnCallBack = function (Emu, API, ret) {
 	var Caption = Emu.isx64 ? Emu.ReadReg(REG_R8)  : Emu.pop();
 	var type	= Emu.isx64 ? Emu.ReadReg(REG_R9D) : Emu.pop();
 
-	log("MessageBox{0}({1}, '{2}', '{3}', {4})".format(
-		API.IsWapi ? 'W' : 'A',
+	// Emu.HexDump(text,25);
+
+	log("{0}({1}, '{2}', '{3}', 0x{4})".format(
+		API.name,
 		hdl,
 		API.IsWapi ? Emu.ReadStringW(text) : Emu.ReadStringA(text),
 		API.IsWapi ? Emu.ReadStringW(Caption) : Emu.ReadStringA(Caption),
-		type
+		type.toString(16)
 	));
 
 	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
@@ -252,3 +269,241 @@ RegisterWindowMessage.install('user32.dll', 'RegisterWindowMessageW');
 ###################################################################################################
 ###################################################################################################
 */
+
+var GetDesktopWindow = new ApiHook();
+/*
+HWND GetDesktopWindow();
+*/
+GetDesktopWindow.OnCallBack = function (Emu, API, ret) {
+	
+	Emu.pop(); // ret
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 0x10010);
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+	return true; 
+};
+
+GetDesktopWindow.install('user32.dll', 'GetDesktopWindow');
+
+
+/*
+###################################################################################################
+###################################################################################################
+*/
+
+
+var GetIconInfo = new ApiHook();
+/*
+BOOL GetIconInfo(
+  HICON     hIcon,
+  PICONINFO piconinfo
+);
+*/
+GetIconInfo.OnCallBack = function (Emu, API, ret) {
+	
+	Emu.pop(); // ret
+
+	var hIcon 	  = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+	var piconinfo = Emu.isx64 ? Emu.ReadReg(REG_EDX) : Emu.pop();
+
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 1);
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+	return true; 
+};
+
+GetIconInfo.install('user32.dll', 'GetIconInfo');
+
+
+/*
+###################################################################################################
+###################################################################################################
+*/
+
+var UnhookWinEvent = new ApiHook();
+/*
+BOOL UnhookWinEvent(
+  HWINEVENTHOOK hWinEventHook
+);
+*/
+UnhookWinEvent.OnCallBack = function (Emu, API, ret) {
+	
+	Emu.pop(); // ret
+
+	var hWinEventHook = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+	
+	log("UnhookWinEvent(0x{0})".format(
+		hWinEventHook.toString(16)
+	));
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 1);
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+	return true; 
+};
+
+UnhookWinEvent.install('user32.dll', 'UnhookWinEvent');
+
+
+/*
+###################################################################################################
+###################################################################################################
+*/
+
+
+
+var UserHandleGrantAccess = new ApiHook();
+/*
+BOOL UserHandleGrantAccess(
+  HANDLE hUserHandle,
+  HANDLE hJob,
+  BOOL   bGrant
+);
+*/
+UserHandleGrantAccess.OnCallBack = function (Emu, API, ret) {
+
+	Emu.pop(); // pop return address ..
+
+	var hUserHandle = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+	var hJob 		= Emu.isx64 ? Emu.ReadReg(REG_EDX) : Emu.pop();
+	var bGrant 		= Emu.isx64 ? Emu.ReadReg(REG_R8)  : Emu.pop();
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 1);
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+	return true; // we handled the Stack and other things :D .
+};
+
+UserHandleGrantAccess.install('user32.dll', 'UserHandleGrantAccess');
+
+/*
+###################################################################################################
+###################################################################################################
+*/
+
+var sprintf = new ApiHook();
+/*
+int WINAPIV wsprintf(
+  LPSTR  ,
+  LPCSTR ,
+  ...    
+);
+*/
+
+sprintf.OnCallBack = function (Emu, API, ret) {
+
+	sprintf.args[0] = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.ReadDword(Emu.ReadReg(REG_ESP) + 4);
+	sprintf.args[1] = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.ReadDword(Emu.ReadReg(REG_ESP) + 8);
+
+	Emu.HexDump(sprintf.args[0], 16);
+	Emu.HexDump(sprintf.args[1], 16);
+
+	// i think implementing this in JS is hard 
+	// so just let the library handle it :D 
+	return true; // we handled the Stack and other things :D .
+};
+
+sprintf.OnExit = function(Emu,API){
+
+	var buffer = sprintf.args[0];
+	var Format = sprintf.args[1];
+
+	Emu.HexDump(buffer, 16);
+	Emu.HexDump(Format, 16);
+
+	warn("{0}(0x{1},'{2}') ".format(
+		API.name,
+		buffer,
+		Format.toString(16)
+	));
+}
+
+sprintf.install('user32.dll', 'wsprintfA');
+sprintf.install('user32.dll', 'wsprintfW');
+
+
+var wvsprintfA = new ApiHook();
+wvsprintfA.OnCallBack = function (Emu, API, ret) {
+	// let the lib handle it
+	return true;
+};
+wvsprintfA.install('user32.dll', 'wvsprintfA');
+
+/*
+###################################################################################################
+###################################################################################################
+*/
+
+
+var CharNext = new ApiHook();
+/*
+LPSTR CharNextA(
+  LPCSTR lpsz
+);
+*/
+CharNext.OnCallBack = function (Emu, API, ret) {
+	
+	Emu.pop();
+
+	var lpsz = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+
+	if (Emu.ReadByte(lpsz) !== 0) {
+		lpsz += 1;
+	}
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, lpsz);
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+	return true;
+};
+CharNext.install('user32.dll', 'CharNextA');
+CharNext.install('user32.dll', 'CharNextW');
+
+/*
+###################################################################################################
+###################################################################################################
+*/
+
+
+var GetDC = new ApiHook();
+/*
+HDC GetDC(
+  HWND hWnd
+);
+*/
+GetDC.OnCallBack = function (Emu, API, ret) {
+
+	Emu.pop(); // pop return address ..
+
+	var hWnd = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 0x120100FE); 
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+	return true;
+};
+GetDC.install('user32.dll', 'GetDC');
+
+
+/*
+###################################################################################################
+###################################################################################################
+*/
+var user32_gen = new ApiHook();
+user32_gen.OnCallBack = function (Emu, API, ret) {
+	// let the lib handle it
+	return true;
+};
+user32_gen.install('user32.dll', 'User32InitializeImmEntryTable');
+user32_gen.install('imm32.dll', 'ImmRegisterClient');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

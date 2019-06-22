@@ -45,7 +45,10 @@ ExitProcess.OnCallBack = function (Emu, API,ret) {
 
 ExitProcess.install('kernel32.dll', 'FatalExit');
 ExitProcess.install('kernel32.dll', 'ExitProcess');
+ExitProcess.install('ntdll.dll', 'RtlExitUserThread');
 ExitProcess.install('ntdll.dll', 'RtlExitUserProcess');
+ExitProcess.install('ucrtbase.dll', 'exit');
+ExitProcess.install('ucrtbase.dll', '_Exit');
 
 /*
 ###################################################################################################
@@ -56,12 +59,16 @@ var IsDebuggerPresent = new ApiHook();
 IsDebuggerPresent.OnCallBack = function (Emu, API,ret) {
 
 	Emu.pop(); // ret
-	
-	warn('0x',ret.toString(16),' : IsDebuggerPresent = 0');
-	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 0);
+
+	var value = 0; // set result to 0 :D
+
+	warn('IsDebuggerPresent = ' + value);
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, value);
 	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
 	return true; 
 };
+
 IsDebuggerPresent.install('kernel32.dll', 'IsDebuggerPresent');
 
 // TODO: remove after implementing apisetschema Forwarder .
@@ -140,6 +147,52 @@ GetModuleHandleW.install('kernel32.dll', 'GetModuleHandleA');
 
 GetModuleHandleW.install('api-ms-win-core-libraryloader-l1-1-0.dll', 'GetModuleHandleW');
 // api-ms-win-core-libraryloader-l1-1-0.dll.GetModuleHandleW
+
+
+/*
+###################################################################################################
+###################################################################################################
+*/
+
+var LdrGetDllHandle = new ApiHook();
+/*
+LdrGetDllHandle(
+  IN PWORD                pwPath OPTIONAL,
+  IN PVOID                Unused OPTIONAL,
+  IN PUNICODE_STRING      ModuleFileName,
+  OUT PHANDLE             pHModule 
+);
+*/
+LdrGetDllHandle.OnCallBack = function (Emu, API, ret) {
+
+	Emu.pop();
+
+	var pwPath    	   = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+	var Unused 		   = Emu.isx64 ? Emu.ReadReg(REG_EDX) : Emu.pop();
+	var ModuleFileName = Emu.isx64 ? Emu.ReadReg(REG_R8)  : Emu.pop();
+	var pHModule	   = Emu.isx64 ? Emu.ReadReg(REG_R9)  : Emu.pop();
+
+	var modulename = Emu.ReadStringW(Emu.ReadDword(ModuleFileName+4));
+
+	log("LdrGetDllHandle('{0}',{1},'{2}',{3})".format(
+		Emu.ReadStringA(pwPath),
+		Unused.toString(16),
+		modulename,
+		pHModule.toString(16)
+	));
+
+	var handle = Emu.GetModuleHandle(modulename);
+	if (handle == 0) handle = Emu.ImageBase;
+
+	Emu.WriteDword(pHModule,handle); 
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 0);
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+	return true;
+};
+LdrGetDllHandle.install('ntdll.dll', 'LdrGetDllHandle');
+
+
 /*
 ###################################################################################################
 ###################################################################################################
@@ -202,9 +255,7 @@ LoadLibrary.OnCallBack = function (Emu, API,ret) {
 	Emu.pop(); // ret PC .. 
 
 	var lpFileName = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
-
 	var Libname = API.IsWapi ? Emu.ReadStringW(lpFileName) : Emu.ReadStringA(lpFileName);
-
 	var handle  = Emu.LoadLibrary(Libname);
 
 	if (API.IsEx) {
@@ -228,7 +279,7 @@ LoadLibrary.OnCallBack = function (Emu, API,ret) {
 			handle.toString(16)
 		));	
 	}
-	
+
 	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, handle);
 	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
 	return true;// true if you handle it false if you want Emu to handle it and set PC .
@@ -258,7 +309,7 @@ FreeLibrary.OnCallBack = function (Emu, API,ret) {
 
 	var hModule = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
 	
-	print("FreeLibrary('0x{0}')".format(
+	print("FreeLibrary(0x{0})".format(
 		hModule.toString(16)
 	));
 
@@ -561,7 +612,7 @@ lstrcat.OnCallBack = function (Emu, API, ret) {
 };
 lstrcat.install('kernel32.dll', 'lstrcatA');
 lstrcat.install('kernel32.dll', 'lstrcatW');
-
+lstrcat.install('kernel32.dll', 'lstrcat');
 
 /*
 ###################################################################################################
@@ -802,6 +853,7 @@ LocalFree.OnCallBack = function (Emu, API, ret) {
 	return true; // true if you handle it false if you want Emu to handle it and set PC .
 };
 LocalFree.install('kernel32.dll', 'LocalFree');
+LocalFree.install('api-ms-win-core-misc-l1-1-0.dll', 'LocalFree');
 
 /*
 ###################################################################################################
@@ -963,6 +1015,12 @@ DECLSPEC_ALLOCATOR LPVOID VirtualAlloc(
   DWORD   dwAccess
 );
 */
+var first_alloc = true;
+
+
+var AllocAddr = 0x40000000;
+var lastSize = 0;
+
 VirtualAlloc.OnCallBack = function (Emu, API, ret) {
 	Emu.pop();
 
@@ -972,17 +1030,28 @@ VirtualAlloc.OnCallBack = function (Emu, API, ret) {
 	var dwFlags  = Emu.isx64 ? Emu.ReadReg(REG_R8D) : Emu.pop();
 	var dwAccess = Emu.isx64 ? Emu.ReadReg(REG_R9D) : Emu.pop();
 
+
+	if (first_alloc) {
+		first_alloc = false;
+	}else {
+		AllocAddr += lastSize;
+	}
+	
 	print('VirtualAlloc(0x{0}, {1}, {2}, {3}) = 0x{4} '.format(
 		Addr.toString(16),
 		Size,
 		dwFlags,
 		dwAccess,
-		(0x40000000 + Size).toString(16)
+		AllocAddr.toString(16)
 	));
 
-	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 0x40000000 + Size);
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, AllocAddr);
 
 	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+
+	lastSize += Size;
+
 	return true; // true if you handle it false if you want Emu to handle it and set PC .
 };
 
@@ -993,6 +1062,177 @@ VirtualAlloc.install('kernel32.dll', 'VirtualAlloc');
 ###################################################################################################
 */
 
+
+var NtAllocateVirtualMemory = new ApiHook();
+/*
+__kernel_entry NTSYSCALLAPI NTSTATUS NtAllocateVirtualMemory(
+  HANDLE    ProcessHandle,
+  PVOID     *BaseAddress,
+  ULONG_PTR ZeroBits,
+  PSIZE_T   RegionSize,
+  ULONG     AllocationType,
+  ULONG     Protect
+);
+*/
+
+NtAllocateVirtualMemory.OnCallBack = function (Emu, API, ret) {
+	
+
+	Emu.pop();
+
+
+	var ProcessHandle = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+	var BaseAddress   = Emu.isx64 ? Emu.ReadReg(REG_RDX) : Emu.pop();
+	var ZeroBits  	  = Emu.isx64 ? Emu.ReadReg(REG_R8D) : Emu.pop();
+	var RegionSize 	  = Emu.isx64 ? Emu.ReadReg(REG_R9D) : Emu.pop();
+
+	// 32 Shadow for x64 as MS describe it :D
+	// not we are at the 5th param .
+	var AllocationType  = Emu.isx64 ? (Emu.ReadReg(REG_RSP) + 32) 	  : Emu.pop(); 
+	var Protect	   		= Emu.isx64 ? (Emu.ReadReg(REG_RSP) + 32 + 8) : Emu.pop(); 
+	
+
+	var Pointer = Emu.ReadDword(BaseAddress);
+	var Size 	= Emu.ReadDword(RegionSize);
+
+	if (Pointer == 0) {
+
+		if (first_alloc) {
+			first_alloc = false;
+		}else {
+			AllocAddr += lastSize;
+		}
+
+		Emu.WriteDword(BaseAddress,AllocAddr);
+	}
+	
+	info('NtAllocateVirtualMemory(0x{0}, 0x{1}, 0x{2}, 0x{3}, 0x{4}, 0x{5}) = 0x{6} '.format(
+		ProcessHandle.toString(16),
+		Pointer.toString(16),
+		ZeroBits.toString(16),
+		Size.toString(16),
+		AllocationType.toString(16),
+		Protect.toString(16),
+		AllocAddr.toString(16)
+	));
+
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 0);// Error Sucsses 
+
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+
+	lastSize += Size;
+
+	return true; // true if you handle it false if you want Emu to handle it and set PC .
+};
+
+NtAllocateVirtualMemory.install('ntdll.dll', 'NtAllocateVirtualMemory');
+
+/*
+###################################################################################################
+###################################################################################################
+*/
+
+var RtlAllocateHeap = new ApiHook();
+/*
+NTSYSAPI PVOID RtlAllocateHeap(
+  PVOID  HeapHandle,
+  ULONG  Flags,
+  SIZE_T Size
+);
+*/
+RtlAllocateHeap.OnCallBack = function (Emu, API, ret) {
+	
+	Emu.pop();
+
+
+	var HeapHandle = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+	var Flags      = Emu.isx64 ? Emu.ReadReg(REG_RDX) : Emu.pop();
+	var Size  	   = Emu.isx64 ? Emu.ReadReg(REG_R8D) : Emu.pop();
+
+	if (first_alloc) {
+		first_alloc = false;
+	}else {
+		AllocAddr += lastSize;
+	}
+
+	print('RtlAllocateHeap(0x{0}, 0x{1}, 0x{2} = 0x{3} '.format(
+		HeapHandle.toString(16),
+		Flags.toString(16),
+		Size.toString(16),
+		AllocAddr.toString(16)
+	));
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, AllocAddr);
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+
+	lastSize += Size;
+
+	return true;
+};
+
+RtlAllocateHeap.install('ntdll.dll', 'RtlAllocateHeap');
+/*
+###################################################################################################
+###################################################################################################
+*/
+
+
+
+var NtProtectVirtualMemory = new ApiHook();
+/*
+NTSYSAPI 
+NTSTATUS
+NTAPI
+NtProtectVirtualMemory(
+  IN HANDLE               ProcessHandle,
+  IN OUT PVOID            *BaseAddress,
+  IN OUT PULONG           NumberOfBytesToProtect,
+  IN ULONG                NewAccessProtection,
+  OUT PULONG              OldAccessProtection 
+ );
+*/
+
+NtProtectVirtualMemory.OnCallBack = function (Emu, API, ret) {
+	
+
+	Emu.pop();
+
+
+	var ProcessHandle = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+	var BaseAddress   = Emu.isx64 ? Emu.ReadReg(REG_RDX) : Emu.pop();
+	var NumberOfBytes = Emu.isx64 ? Emu.ReadReg(REG_R8D) : Emu.pop();
+	var NewAccess 	  = Emu.isx64 ? Emu.ReadReg(REG_R9D) : Emu.pop();
+
+	// 32 Shadow for x64 as MS describe it :D
+	// not we are at the 5th param .
+	var OldAccess 	  = Emu.isx64 ? (Emu.ReadReg(REG_RSP) + 32) 	  : Emu.pop(); 
+	
+
+	var Pointer = Emu.ReadDword(BaseAddress);
+	
+	print('NtProtectVirtualMemory(0x{0}, 0x{1}, 0x{2}, 0x{3}, 0x{4}) '.format(
+		ProcessHandle.toString(16),
+		Pointer.toString(16),
+		NumberOfBytes.toString(16),
+		NewAccess.toString(16),
+		OldAccess.toString(16)
+	));
+
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 0);// Error Sucsses 
+
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+
+	return true; // true if you handle it false if you want Emu to handle it and set PC .
+};
+
+NtProtectVirtualMemory.install('ntdll.dll', 'NtProtectVirtualMemory');
+
+/*
+###################################################################################################
+###################################################################################################
+*/
 var VirtualFree = new ApiHook();
 /*
 BOOL WINAPI VirtualFree(
@@ -1300,6 +1540,9 @@ GetModuleFileName.OnCallBack = function (Emu, API, ret) {
 
 GetModuleFileName.install('kernel32.dll', 'GetModuleFileNameA');
 GetModuleFileName.install('kernel32.dll', 'GetModuleFileNameW');
+GetModuleFileName.install('api-ms-win-core-libraryloader-l1-1-0.dll', 'GetModuleFileNameA');
+GetModuleFileName.install('api-ms-win-core-libraryloader-l1-1-0.dll', 'GetModuleFileNameW');
+
 
 /*
 ###################################################################################################
@@ -1330,8 +1573,10 @@ EncodePointer.OnCallBack = function (Emu, API,ret) {
 	return true; 
 };
 EncodePointer.install('kernel32.dll', 'EncodePointer');
+EncodePointer.install('msvcr90.dll', '_encode_pointer');
 EncodePointer.install('api-ms-win-core-util-l1-1-0.dll', 'EncodePointer');
 
+EncodePointer.install('ntdll.dll', 'RtlEncodePointer');
 /*
 ###################################################################################################
 ###################################################################################################
@@ -1362,6 +1607,9 @@ DecodePointer.OnCallBack = function (Emu, API,ret) {
 	return true; 
 };
 DecodePointer.install('kernel32.dll', 'DecodePointer');
+DecodePointer.install('api-ms-win-core-util-l1-1-0.dll', 'DecodePointer');
+
+DecodePointer.install('msvcr90.dll', '_decode_pointer');
 
 
 /*
@@ -1444,18 +1692,20 @@ _Maybe_raises_SEH_exception_ VOID InitializeCriticalSection(
 */
 InitializeCriticalSection.OnCallBack = function (Emu, API,ret) {
 	
-	Emu.pop(); // ret
+	// Emu.pop(); // ret
 
-	var lpCriticalSection = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+	// var lpCriticalSection = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
 
-	print('InitializeCriticalSection(0x{0})'.format(
-		lpCriticalSection.toString(16)
-	));
+	// print('InitializeCriticalSection(0x{0})'.format(
+	// 	lpCriticalSection.toString(16)
+	// ));
 
-	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+	// Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
 	return true; 
 };
 InitializeCriticalSection.install('kernel32.dll', 'InitializeCriticalSection');
+
+InitializeCriticalSection.install('api-ms-win-core-synch-l1-1-0.dll', 'InitializeCriticalSection');
 
 /*
 ###################################################################################################
@@ -1774,6 +2024,9 @@ CreateMutex.OnCallBack = function (Emu, API, ret) {
 
 	var MutexName = API.IsWapi ? Emu.ReadStringW(lpName) : Emu.ReadStringA(lpName);
 
+	Emu.HexDump(lpName,16);
+
+
 	var initOwner = bInitialOwner == 1 ? 'True' : 'False';
 
 	print("CreateMutex(0x{0},{1},'{2}')".format(
@@ -1784,10 +2037,11 @@ CreateMutex.OnCallBack = function (Emu, API, ret) {
 
 	MutexList.push(MutexName);
 
-	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 1);
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 0xE02C);
 	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
 	return true; 
 };
+
 CreateMutex.install('kernel32.dll', 'CreateMutexA');
 CreateMutex.install('kernel32.dll', 'CreateMutexW');
 
@@ -1842,10 +2096,10 @@ GetSystemTime.OnCallBack = function (Emu, API, ret) {
 
 	var lpSystemTime = Emu.isx64 ? Emu.ReadReg(REG_ECX) : Emu.pop();
 
-	var SysTime = [0xE2,0x07,  // wYear
-				   0x09,0x00,  // wMonth
+	var SysTime = [0xE3,0x07,  // wYear
+				   0x06,0x00,  // wMonth
 				   0x05,0x00,  // wDayOfWeek
-				   0x07,0x00,  // wDay
+				   0x0B,0x00,  // wDay
 				   0x0C,0x00,  // wHour
 				   0x30,0x00,  // wMinute
 				   0x15,0x00,  // wSecond
@@ -1862,6 +2116,7 @@ GetSystemTime.OnCallBack = function (Emu, API, ret) {
 };
 GetSystemTime.install('kernel32.dll', 'GetSystemTime');
 GetSystemTime.install('kernel32.dll', 'GetLocalTime');
+GetSystemTime.install('api-ms-win-core-sysinfo-l1-1-0.dll', 'GetLocalTime');
 
 /*
 ###################################################################################################
@@ -1920,7 +2175,7 @@ InterlockedCompareExchange.install('api-ms-win-core-interlocked-l1-1-0.dll', 'In
 var InterlockedExchange = new ApiHook();
 InterlockedExchange.OnCallBack = function (Emu, API,ret) {
 
-	warn('InterlockedExchange - kernel32 will handle it for us :D');
+	warn('InterlockedExchange');
 
 	return true; // let lib handle it
 };
@@ -2101,6 +2356,61 @@ GetConsoleMode.install('kernel32.dll', 'GetConsoleMode');
 ###################################################################################################
 */
 
+var FreeConsole = new ApiHook();
+/*
+BOOL WINAPI FreeConsole(void);
+*/
+FreeConsole.OnCallBack = function (Emu, API, ret) {
+
+	Emu.pop();
+
+	log('FreeConsole()');
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 1);
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+	return true;
+};
+FreeConsole.install('kernel32.dll', 'FreeConsole');
+
+/*
+###################################################################################################
+###################################################################################################
+*/
+
+var GetSystemWow64DirectoryA = new ApiHook();
+/*
+UINT GetSystemWow64DirectoryA(
+  LPSTR lpBuffer,
+  UINT  uSize
+);
+*/
+GetSystemWow64DirectoryA.OnCallBack = function (Emu, API, ret) {
+
+	Emu.pop();
+
+	var lpBuffer = Emu.isx64 ? Emu.ReadReg(REG_RCX) : Emu.pop();
+	var uSize 	 = Emu.isx64 ? Emu.ReadReg(REG_EDX) : Emu.pop();
+
+	var path = 'C:\\Windows\\SysWOW64';
+
+	API.IsWapi ? Emu.WriteStringW(lpBuffer,path) : Emu.WriteStringA(lpBuffer,path);
+
+	log("GetSystemWow64DirectoryA(0x{0},0x{1}) = '{2}'".format(
+		lpBuffer.toString(16),
+		uSize.toString(16),
+		path
+	));
+
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, path.length);
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+	return true;
+};
+GetSystemWow64DirectoryA.install('kernel32.dll', 'GetSystemWow64DirectoryA');
+
+/*
+###################################################################################################
+###################################################################################################
+*/
 
 var Wow64DisableWow64FsRedirection = new ApiHook();
 /*

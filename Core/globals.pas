@@ -6,9 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Emu,JSPlugins_BEngine,
-  {$I besenunits.inc},
-  Generics.Collections,FnHook,jsemuobj,
-  UnicornConst,Unicorn_dyn;
+  {$I besenunits.inc},Unicorn_dyn;
 
 var
   VerboseExcp  : Boolean = False;
@@ -24,19 +22,15 @@ var
 
   Emulator   : TEmu;
 
-  MAIN_CPU   : uc_mode;
-  MAIN_X64   : boolean; // if PE is x64 or not ..
-  FilePath   : string;
-
   JS : TBESENInstance;
   JSEmu : TBESENObject;
 
-  HOOK_BASE,HOOK_INDEX,HOOK_LIB,HOOK_Fn : UInt64;
+  //HOOK_BASE,HOOK_INDEX,HOOK_LIB,HOOK_Fn : UInt64;
 
   win32 : UnicodeString = '';
   win64 : UnicodeString = '';
 
-  JSAPI : ansistring = '';
+  JSAPI : AnsiString = '';
 
 implementation
 

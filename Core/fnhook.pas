@@ -1,13 +1,13 @@
 unit FnHook;
 
-{$mode delphi}
+{$mode delphi}{$H+}
 
 interface
 
 uses
   Classes, SysUtils,
   Unicorn_dyn , UnicornConst, X86Const,
-  Generics.Collections,Generics.Defaults,
+  Generics.Collections,
   {$I besenunits.inc},JSPlugins_BEngine;
 
 type
@@ -35,18 +35,20 @@ type
 
   { THookFunction }
   THookFunction = record
-    LibName, FuncName : String;
+    LibName, FuncName : string;
     ordinal : UInt32;
     IsOrdinal : Boolean;
     API : TLibFunction;
     NativeCallBack : Pointer;
     JSHook : TNewHook;
-    class function Create(const LibName, FnName : string;
-          Ordinal : UInt32;
-          IsOrdinal : Boolean = False;
+    class function Create(
+          FLibName, FnName : string;
+          FOrdinal : UInt32;
+          FIsOrdinal : Boolean = False;
           NCallBack : Pointer = nil; // Native Callback - next version .
-          JSHook : TNewHook = nil): THookFunction; static;
+          FJSHook : TNewHook = nil) : THookFunction; static;
   end;
+
 
   { TNewDll }
 
@@ -67,13 +69,13 @@ type
 
     FnByAddr    : TFastHashMap<UInt64, TLibFunction>;
     FnByOrdinal : TFastHashMap<UInt64, TLibFunction>;
-    FnByName    : TFastHashMap<String, TLibFunction>;
+    FnByName    : TFastHashMap<UInt64, TLibFunction>;
 
     class function Create(EntryPoint : UInt64; const LibName : string; FBaseAddress : UInt64;
                    FImageSize : UInt32;
                    ByAddr : TFastHashMap<UInt64, TLibFunction>;
                    ByOrdinal : TFastHashMap<UInt64, TLibFunction>;
-                   ByName : TFastHashMap<String, TLibFunction>): TNewDll; static;
+                   ByName : TFastHashMap<UInt64, TLibFunction>): TNewDll; static;
   end;
 
 implementation
@@ -81,17 +83,19 @@ implementation
 { THookFunction }
 
 class function THookFunction.Create(
-          const LibName, FnName : string;
-          Ordinal : UInt32;
-          IsOrdinal : Boolean = False;
+          FLibName, FnName : string;
+          FOrdinal : UInt32;
+          FIsOrdinal : Boolean = False;
           NCallBack : Pointer = nil; // Native Callback - next version .
-          JSHook : TNewHook = nil): THookFunction;
+          FJSHook : TNewHook = nil) : THookFunction;
 begin
-  Result.LibName        := LibName;
+  FillChar(Result, sizeof(Result), 0);
+
+  Result.LibName        := FLibName;
   Result.FuncName       := FnName;
-  Result.IsOrdinal      := IsOrdinal;
-  Result.ordinal        := Ordinal;
-  Result.JSHook         := JSHook;
+  Result.IsOrdinal      := FIsOrdinal;
+  Result.ordinal        := FOrdinal;
+  Result.JSHook         := FJSHook;
   Result.nativeCallBack := NCallBack;
 end;
 
@@ -103,6 +107,8 @@ class function TLibFunction.Create(
             FIsForwarder, IsOrdinal : Boolean;
             FWName : string): TLibFunction;
 begin
+  FillChar(Result, sizeof(Result), 0);
+
   Result.Hits           := 0;
   Result.Return         := 0;
   Result.IsForwarder    := FIsForwarder;
@@ -119,8 +125,10 @@ class function TNewDll.Create(EntryPoint : UInt64; const LibName : string; FBase
                    FImageSize : UInt32;
                    ByAddr : TFastHashMap<UInt64, TLibFunction>;
                    ByOrdinal : TFastHashMap<UInt64, TLibFunction>;
-                   ByName : TFastHashMap<String, TLibFunction>): TNewDll; static;
+                   ByName : TFastHashMap<UInt64, TLibFunction>): TNewDll; static;
 begin
+  FillChar(Result, sizeof(Result), 0);
+
   Result.EntryPoint  := EntryPoint;
   Result.Dllname     := LibName;
   Result.BaseAddress := FBaseAddress;

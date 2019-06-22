@@ -37,7 +37,7 @@ malloc.OnCallBack = function (Emu, API, ret) {
 	return true; // we handled the Stack and other things :D .
 };
 malloc.install('msvcrt.dll', 'malloc');
-
+malloc.install('msvcr90.dll', 'malloc');
 
 /*
 ###################################################################################################
@@ -65,6 +65,7 @@ free.OnCallBack = function (Emu, API, ret) {
 	return true;
 };
 free.install('msvcrt.dll', 'free');
+free.install('msvcr90.dll', 'free');
 
 
 /*
@@ -174,6 +175,8 @@ _lock.OnCallBack = function (Emu, API, ret) {
 
 	// Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 100);
 	// Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
+
+	// just let the library handle it :D
 	return true;
 };
 _lock.install('msvcrt.dll', '_lock');
@@ -562,26 +565,17 @@ __crtLCMapStringA.install('msvcrt.dll', '__crtLCMapStringA');
 ###################################################################################################
 */
 
-var memset = new ApiHook();
-memset.OnCallBack = function (Emu, API, ret) {
-
-	// just let the library handle it :D 
-	return true;
-};
-memset.install('msvcrt.dll', 'memset');
-
-/*
-###################################################################################################
-###################################################################################################
-*/
-
 var _initterm = new ApiHook();
 _initterm.OnCallBack = function (Emu, API, ret) {
-
-	// just let the library handle it :D 
+	
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 0);
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
 	return true;
 };
 _initterm.install('msvcrt.dll', '_initterm');
+_initterm.install('msvcr90.dll', '_initterm');
+_initterm.install('ucrtbase.dll', '_initterm');
+_initterm.install('ucrtbase.dll', '_get_initial_narrow_environment');
 /*
 ###################################################################################################
 ###################################################################################################
@@ -589,10 +583,13 @@ _initterm.install('msvcrt.dll', '_initterm');
 var _initterm_e = new ApiHook();
 _initterm_e.OnCallBack = function (Emu, API, ret) {
 
-	// just let the library handle it :D 
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 0);
+	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
 	return true;
 };
 _initterm_e.install('msvcrt.dll', '_initterm_e');
+_initterm_e.install('msvcr90.dll', '_initterm_e');
+_initterm_e.install('ucrtbase.dll', '_initterm_e');
 /*
 ###################################################################################################
 ###################################################################################################
@@ -676,42 +673,92 @@ vswprintf_s.install('msvcrt.dll', 'vswprintf_s');
 ###################################################################################################
 */
 
-var _woutput_s = new ApiHook();
-_woutput_s.OnCallBack = function (Emu, API, ret) {
+var Generic = new ApiHook();
+Generic.OnCallBack = function (Emu, API, ret) {
 
 	// just let the library handle it :D 
 	return true;
 };
-_woutput_s.install('msvcrt.dll', '_woutput_s');
+
+// Generic.install('kernel32.dll', '_lcreat');
+// Generic.install('kernel32.dll', '_hwrite');
+// Generic.install('kernel32.dll', '_lclose');
+
+
+Generic.install('msvcrt.dll', '__set_app_type');
+Generic.install('msvcrt.dll', '_mbtowc_l');
+Generic.install('msvcrt.dll', 'mbtowc');
+Generic.install('msvcrt.dll', '_woutput_s');
+Generic.install('msvcrt.dll', '__p__commode');
+Generic.install('msvcrt.dll', '_controlfp');
+
+Generic.install('msvcrt.dll', '__getmainargs');
+
+Generic.install('msvcrt.dll', '__p__fmode');
+
+Generic.install('msvcrt.dll', '_ismbblead');
+Generic.install('msvcrt.dll', '_cexit');
+
+Generic.install('msvcrt.dll', 'strrchr');
+
+Generic.install('msvcrt.dll', 'strstr');
+
+Generic.install('msvcrt.dll', 'strncpy');
+
+Generic.install('msvcrt.dll', 'strncat');
+
+Generic.install('msvcrt.dll', '__p___initenv');
+
+
+Generic.install('msvcr90.dll', '__set_app_type');
+
+
+Generic.install('msvcr90.dll', '_controlfp_s');
+Generic.install('msvcr90.dll', '__p__commode');
+Generic.install('msvcr90.dll', '__p__fmode');
+Generic.install('msvcr90.dll', '_except_handler4_common');
+
+Generic.install('msvcr90.dll', '_unlock');
+Generic.install('msvcr90.dll', '_lock');
+
+Generic.install('msvcr90.dll', '__wgetmainargs');
+
+Generic.install('msvcr90.dll', '_calloc_crt');
+
+Generic.install('msvcr90.dll', '_malloc_crt');
+Generic.install('msvcr90.dll', 'memcpy');
+Generic.install('msvcr90.dll', 'wcslen');
+
+Generic.install('msvcr90.dll', '__dllonexit');
+Generic.install('msvcr90.dll', '_control87');
+Generic.install('msvcr90.dll', '_onexit');
+Generic.install('msvcr90.dll', '_msize');
+Generic.install('msvcr90.dll', '_errno');
+
+Generic.install('msvcr90.dll', '__set_flsgetvalue');
+Generic.install('msvcr90.dll', '_invalid_parameter');
+
+
+Generic.install('msvcr90.dll', '_initptd');
+Generic.install('msvcr90.dll', '_encoded_null');
+
+
+
+Generic.install('vcruntime140.dll', '__telemetry_main_invoke_trigger');
+Generic.install('vcruntime140.dll', '_except_handler4_common');
+
+
+Generic.install('ucrtbase.dll', '__p___argv');
+Generic.install('ucrtbase.dll', '__p___argc');
+
+
+
 
 /*
 ###################################################################################################
 ###################################################################################################
 */
 
-var mbtowc = new ApiHook();
-mbtowc.OnCallBack = function (Emu, API, ret) {
 
-	// just let the library handle it :D 
-	return true;
-};
-mbtowc.install('msvcrt.dll', 'mbtowc');
 
-/*
-###################################################################################################
-###################################################################################################
-*/
-
-var _mbtowc_l = new ApiHook();
-_mbtowc_l.OnCallBack = function (Emu, API, ret) {
-
-	// just let the library handle it :D 
-	return true;
-};
-_mbtowc_l.install('msvcrt.dll', '_mbtowc_l');
-
-/*
-###################################################################################################
-###################################################################################################
-*/
 

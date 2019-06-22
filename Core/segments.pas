@@ -229,7 +229,7 @@ begin
   desc.limit1 := limit shr 16;
 
   //some sane defaults
-  if Emulator.PE_x64 then
+  if Emulator.isx64 then
     desc.is_64_code := 1;
   desc.dpl := 3;
   desc.present := 1;
@@ -239,6 +239,7 @@ begin
 
 end;
 
+// not used but maybe i'll improve it .
 procedure Init_GDT(desc : PSegmentDescriptor;
   base, limit, access, flags : UInt32);
 begin

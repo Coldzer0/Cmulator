@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectOptions>
+    <Version Value="11"/>
+    <General>
+      <Flags>
+        <MainUnitHasCreateFormStatements Value="False"/>
+        <MainUnitHasTitleStatement Value="False"/>
+        <MainUnitHasScaledStatement Value="False"/>
+      </Flags>
+      <SessionStorage Value="InProjectDir"/>
+      <MainUnit Value="0"/>
+      <Title Value="Cmulator"/>
+      <UseAppBundle Value="False"/>
+      <ResourceType Value="res"/>
+    </General>
+    <MacroValues Count="1">
+      <Macro1 Name="LCLWidgetType" Value="nogui"/>
+    </MacroValues>
+    <BuildModes Count="3">
+      <Item1 Name="Default" Default="True"/>
+      <Item2 Name="Debug">
+        <MacroValues Count="1">
+          <Macro1 Name="LCLWidgetType" Value="nogui"/>
+        </MacroValues>
+        <CompilerOptions>
+          <Version Value="11"/>
+          <Target>
+            <Filename Value="Build/OSX/Cmulator"/>
+          </Target>
+          <SearchPaths>
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Capstone;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON"/>
+            <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
+          </SearchPaths>
+          <Parsing>
+            <Style Value="1"/>
+            <SyntaxOptions>
+              <SyntaxMode Value="Delphi"/>
+              <IncludeAssertionCode Value="True"/>
+              <CStyleMacros Value="True"/>
+            </SyntaxOptions>
+          </Parsing>
+          <CodeGeneration>
+            <Checks>
+              <IOChecks Value="True"/>
+              <RangeChecks Value="True"/>
+              <OverflowChecks Value="True"/>
+              <StackChecks Value="True"/>
+            </Checks>
+            <VerifyObjMethodCallValidity Value="True"/>
+          </CodeGeneration>
+          <Linking>
+            <Debugging>
+              <DebugInfoType Value="dsDwarf2Set"/>
+              <UseHeaptrc Value="True"/>
+              <TrashVariables Value="True"/>
+              <UseExternalDbgSyms Value="True"/>
+            </Debugging>
+          </Linking>
+        </CompilerOptions>
+      </Item2>
+      <Item3 Name="Release">
+        <MacroValues Count="1">
+          <Macro1 Name="LCLWidgetType" Value="nogui"/>
+        </MacroValues>
+        <CompilerOptions>
+          <Version Value="11"/>
+          <Target>
+            <Filename Value="Build/OSX/Cmulator"/>
+          </Target>
+          <SearchPaths>
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Capstone;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON"/>
+            <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
+          </SearchPaths>
+          <Parsing>
+            <Style Value="1"/>
+            <SyntaxOptions>
+              <SyntaxMode Value="Delphi"/>
+              <CStyleMacros Value="True"/>
+            </SyntaxOptions>
+          </Parsing>
+          <CodeGeneration>
+            <SmartLinkUnit Value="True"/>
+            <Optimizations>
+              <OptimizationLevel Value="3"/>
+            </Optimizations>
+          </CodeGeneration>
+          <Linking>
+            <Debugging>
+              <GenerateDebugInfo Value="False"/>
+            </Debugging>
+            <LinkSmart Value="True"/>
+          </Linking>
+        </CompilerOptions>
+      </Item3>
+      <SharedMatrixOptions Count="1">
+        <Item1 ID="045796252379" Modes="Debug,Default,Release" Type="IDEMacro" MacroName="LCLWidgetType" Value="nogui"/>
+      </SharedMatrixOptions>
+    </BuildModes>
+    <PublishOptions>
+      <Version Value="2"/>
+      <UseFileFilters Value="True"/>
+    </PublishOptions>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes Count="0"/>
+    </RunParams>
+    <RequiredPackages Count="1">
+      <Item1>
+        <PackageName Value="bs_Utils"/>
+      </Item1>
+    </RequiredPackages>
+    <Units Count="1">
+      <Unit0>
+        <Filename Value="Cmulator.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit0>
+    </Units>
+  </ProjectOptions>
+  <CompilerOptions>
+    <Version Value="11"/>
+    <Target>
+      <Filename Value="Build/OSX/Cmulator"/>
+    </Target>
+    <SearchPaths>
+      <IncludeFiles Value="$(ProjOutDir)"/>
+      <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Capstone;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON"/>
+      <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
+    </SearchPaths>
+    <Parsing>
+      <Style Value="1"/>
+      <SyntaxOptions>
+        <SyntaxMode Value="Delphi"/>
+        <CStyleMacros Value="True"/>
+      </SyntaxOptions>
+    </Parsing>
+  </CompilerOptions>
+  <Debugging>
+    <Exceptions Count="3">
+      <Item1>
+        <Name Value="EAbort"/>
+      </Item1>
+      <Item2>
+        <Name Value="ECodetoolError"/>
+      </Item2>
+      <Item3>
+        <Name Value="EFOpenError"/>
+      </Item3>
+    </Exceptions>
+  </Debugging>
+</CONFIG>

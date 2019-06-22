@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Crt ,JSEmuObj,FnHook,Emu,math,
-  Unicorn_dyn , UnicornConst, X86Const;
+  Unicorn_dyn , UnicornConst, X86Const, xxHash;
 
 
 procedure InstallNativeHooks();
@@ -15,7 +15,7 @@ implementation
   uses
     Globals,Utils,TEP_PEB;
 
-function ZwContinue( uc : uc_engine; Address , ret : UInt64 ) : Boolean; stdcall;
+function NtContinue( uc : uc_engine; Address , ret : UInt64 ) : Boolean; stdcall;
 var
   ExceptionRec : UInt64 = 0;
   Context      : UInt64 = 0;
@@ -43,15 +43,15 @@ begin
     halt(0);
   end;
 
-  uc_reg_write(uc,ifthen(Emulator.PE_x64,UC_X86_REG_RBP,UC_X86_REG_EBP),@ContextRecord.Ebp);
-  uc_reg_write(uc,ifthen(Emulator.PE_x64,UC_X86_REG_RSP,UC_X86_REG_ESP),@ContextRecord.Esp);
-  uc_reg_write(uc,ifthen(Emulator.PE_x64,UC_X86_REG_RIP,UC_X86_REG_EIP),@ContextRecord.Eip);
-  uc_reg_write(uc,ifthen(Emulator.PE_x64,UC_X86_REG_RDI,UC_X86_REG_EDI),@ContextRecord.Edi);
-  uc_reg_write(uc,ifthen(Emulator.PE_x64,UC_X86_REG_RSI,UC_X86_REG_ESI),@ContextRecord.Esi);
-  uc_reg_write(uc,ifthen(Emulator.PE_x64,UC_X86_REG_RBX,UC_X86_REG_EBX),@ContextRecord.Ebx);
-  uc_reg_write(uc,ifthen(Emulator.PE_x64,UC_X86_REG_RDX,UC_X86_REG_EDX),@ContextRecord.Edx);
-  uc_reg_write(uc,ifthen(Emulator.PE_x64,UC_X86_REG_RCX,UC_X86_REG_ECX),@ContextRecord.Ecx);
-  uc_reg_write(uc,ifthen(Emulator.PE_x64,UC_X86_REG_RAX,UC_X86_REG_EAX),@ContextRecord.Eax);
+  uc_reg_write(uc,ifthen(Emulator.isx64,UC_X86_REG_RBP,UC_X86_REG_EBP),@ContextRecord.Ebp);
+  uc_reg_write(uc,ifthen(Emulator.isx64,UC_X86_REG_RSP,UC_X86_REG_ESP),@ContextRecord.Esp);
+  uc_reg_write(uc,ifthen(Emulator.isx64,UC_X86_REG_RIP,UC_X86_REG_EIP),@ContextRecord.Eip);
+  uc_reg_write(uc,ifthen(Emulator.isx64,UC_X86_REG_RDI,UC_X86_REG_EDI),@ContextRecord.Edi);
+  uc_reg_write(uc,ifthen(Emulator.isx64,UC_X86_REG_RSI,UC_X86_REG_ESI),@ContextRecord.Esi);
+  uc_reg_write(uc,ifthen(Emulator.isx64,UC_X86_REG_RBX,UC_X86_REG_EBX),@ContextRecord.Ebx);
+  uc_reg_write(uc,ifthen(Emulator.isx64,UC_X86_REG_RDX,UC_X86_REG_EDX),@ContextRecord.Edx);
+  uc_reg_write(uc,ifthen(Emulator.isx64,UC_X86_REG_RCX,UC_X86_REG_ECX),@ContextRecord.Ecx);
+  uc_reg_write(uc,ifthen(Emulator.isx64,UC_X86_REG_RAX,UC_X86_REG_EAX),@ContextRecord.Eax);
 
   Emulator.Flags.FLAGS := ContextRecord.EFlags;
   reg_write_x64(uc,UC_X86_REG_EFLAGS,Emulator.Flags.FLAGS);
@@ -59,7 +59,7 @@ begin
   if VerboseExcp then
   begin
     TextColor(LightMagenta);
-    Writeln(Format('ZwContinue -> Context = 0x%x',[Context]));
+    Writeln(Format('ZwContinue -> Context = 0x%x'#10#13,[Context]));
     NormVideo;
   end;
 
@@ -68,9 +68,8 @@ end;
 
 procedure InstallNativeHooks();
 begin
-  Emulator.Hooks.ByName.AddOrSetValue('ZwContinue',THookFunction.Create(
-   'ntdll','ZwContinue',0,False,@ZwContinue,nil));
-
+  Emulator.Hooks.ByName.AddOrSetValue(xxHash64Calc('ntdll.NtContinue'),THookFunction.Create(
+   'ntdll','NtContinue',0,False,@NtContinue,nil));
 end;
 
 end.

@@ -8,7 +8,8 @@ interface
 uses
   Generics.Collections,
   SysUtils,
-  PE.Common;
+  PE.Common,
+  strutils;
 
 type
 
@@ -90,20 +91,11 @@ end;
 
 function TPEExportSym.GetForwarderLibAndFuncName(out Lib, Name: string): boolean;
 var
-  arr: TArray<string>;
+  arr: TStringArray;
 begin
-  arr := string(ForwarderName).Split(['.']);
-  result := length(arr) = 2;
-  if result then
-  begin
-    Lib := arr[0];
-    name := arr[1];
-  end
-  else
-  begin
-    Lib := '';
-    name := '';
-  end;
+  Lib := ExtractWord(1,ForwarderName,['.']);
+  name := ExtractWord(2,ForwarderName,['.']);
+  result := (lib <> '') and (name <> '')
 end;
 
 function TPEExportSym.IsValid: boolean;

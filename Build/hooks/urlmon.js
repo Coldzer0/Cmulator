@@ -22,16 +22,14 @@ URLDownloadToFile.OnCallBack = function (Emu, API, ret) {
     // not we are at the 5th param .
     var lpfnCB    = Emu.isx64 ? (Emu.ReadReg(REG_RSP) + 32) : Emu.pop();     
 
-    var msg = "0x{0} : {1}(0, '{2}', '{3}', {4}, {5})".format(
+    warn("0x{0} : {1}(0, '{2}', '{3}', {4}, {5})".format(
       ret.toString(16),
       API.name,
       API.IsWapi ? Emu.ReadStringW(url) : Emu.ReadStringA(url),
       API.IsWapi ? Emu.ReadStringW(filename) : Emu.ReadStringA(filename),
       dwReserved,
       lpfnCB
-    );
-
-    warn(msg);
+    ));
 
     Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 0); // return 0 << from MS docs. 
     Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);

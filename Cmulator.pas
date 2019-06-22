@@ -7,12 +7,12 @@ program Cmulator;
 
 uses
   {$IFDEF unix}
-  cthreads,
+  cthreads,BaseUnix,
   {$ENDIF}
   {$IFDEF WINDOWS}
   windows,
   {$ENDIF}
-  cmem,ctypes,math,Crt,
+  cmem,ctypes,math,Crt,dynlibs,
   SysUtils,Classes,
   {$I Core/besenunits.inc},
   Globals,
@@ -25,7 +25,9 @@ uses
   PE.Imports.Lib,  // using TPEImportLibrary .
   PE.Imports.Func, // using TPEImportFunction .
   PE.Types.Directories,
-  FileUtil,Utils,TEP_PEB;//,GUI;
+  //GUI,
+  FileUtil,Utils,TEP_PEB;
+
 
 
 procedure info();
@@ -46,14 +48,17 @@ begin
   info();
   Writeln('Usage Example : ' , ParamStr(0) , ' -file ./Mal.exe -q');
   Writeln('   -f        Path to PE or ShellCode file to Emulate .');
-  Writeln('   -s        Number of Steps Limit if 0 then it''s Unlimited - (default = 0) , ');
+  Writeln('   -s        Number of Steps Limit if 0 then it''s Unlimited - (default = 2000000) , ');
   Writeln('             But it works different with Quick Mode - it will increment ,');
   Writeln('             On any bransh like call jmp jz ret etc.. , so use smaller value .');
   Writeln();
-  Writeln('   -q        Quick Mode to make Execution Faster But no disasm .');
+  Writeln('   -q        Quick Mode to make Execution Faster But no disasm,');
+  Writeln('             [x] In Quick Mode AddressHooks will not work');
+  Writeln();
   Writeln('   -asm      Show Assembly instructions .');
   Writeln('   -x64      By default Cmulator Detect the PE Mode But this one for x64 ShellCodes .');
   Writeln('   -sc       To Notify Cmulator that the File is ShellCode .');
+  WriteLn('   -ex       show SEH Excptions Address and Handlers');
   Writeln();
   Writeln('   -v        Show Some Info When Calling an API and Some Other Stuff .');
   Writeln('   -vv       Like -v But with more info .');
@@ -108,27 +113,22 @@ var
   i : integer;
   IsShellcode : boolean = False;
   SCx64 : Boolean = False;
-  //x : PEB_LDR_DATA_32;
 begin
-  // this here for testing :V .
-  //Writeln('Offset = ',hexStr(QWORD(Pointer(@x.SsHandle)) - QWORD(Pointer(@x)),4));
-  //GuiTest();
-  //exit;
-
+  //test; exit;
   FilePath := '';
-
   LoadConfig();
 
   {$IFDEF WINDOWS}
   SetConsoleOutputCP(CP_UTF8);
   {$ENDIF}
+
   if Paramcount = 0 then
   begin
     Writeln();
     Help();
     halt(0);
   end;
-  for i := 0 to Paramcount do
+  for i := 1 to Paramcount do
   begin
     if LowerCase(ParamStr(i)) = '-h' then
     begin
@@ -154,7 +154,7 @@ begin
       if not FileExists(FilePath) then
       begin
         Writeln();
-        Writeln(Format('[x] "%s" not found',[FilePath]));
+        Writeln(Format('[x] file "%s" not found',[FilePath]));
         Help();
         halt(0);
       end;
@@ -196,13 +196,13 @@ begin
   if Speed and ShowASM then
   begin
     TextColor(LightRed);
-    Writeln('Can''t Use Quick Mode with ASM');
+    Writeln('Can''t Use Quick Mode with ASM Mode');
     Writeln();
     NormVideo;
     halt(0);
   end;
 
-  Randomize; // don't remove this :D - it's here for a reason .
+  Randomize; // don't remove this :D - it's here for a reason :P .
 
   Emulator := TEmu.Create(FilePath,IsShellcode,SCx64);
 
@@ -212,5 +212,5 @@ begin
 
   Writeln(#10#10);
   Writeln('Press Enter to Close ¯\_(ツ)_/¯');
-  ReadLn;
+  //ReadLn;
 end.
