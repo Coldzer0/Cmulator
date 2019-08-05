@@ -79,118 +79,17 @@ begin
 
 end;
 
-{ TODO: implement apisetschema Forwarder.}
-procedure FixDllImports(uc : uc_engine; var Img: TPEImage; DllBase : UInt64);
-var
-  SysDll : TNewDll;
-  HookFn : TLibFunction;
-  Lib : TPEImportLibrary;
-  Fn  : TPEImportFunction;
-  Hash : UInt64;
-  rva , FuncAddr : TRVA;
-  err : uc_err;
-  path : UnicodeString;
-  Dll : string;
-begin
-  FuncAddr := 0;
-  if VerboseEx then
-  begin
-    Writeln('[---------------------------------------]');
-    Writeln('[            Fixing DLL Imports         ]');Writeln();
-    Writeln('[*] File Name  : ',ExtractFileName(Img.FileName)); Writeln();
-  end;
-  // Scan libraries.
-  for Lib in Img.Imports.Libs do
-  begin
-    Dll := ExtractFileNameWithoutExt(ExtractFileName(lib.Name)) + '.dll';
-
-    if Emulator.isx64 then
-       Path := IncludeTrailingPathDelimiter(win64) + UnicodeString(LowerCase(Trim(Dll)))
-    else
-       Path := IncludeTrailingPathDelimiter(win32) + UnicodeString(LowerCase(Trim(Dll)));
-
-    if not FileExists(Path) then
-    begin
-      Writeln('"',Dll,'" not found ! [1]');
-      Writeln();
-      halt(-1);
-    end;
-    // If library not loaded then load it .
-    if not Emulator.Libs.ContainsKey(LowerCase(Dll)) then
-    begin
-      if VerboseEx then
-      begin
-        Writeln();
-        Writeln('[>] ',ExtractFileName(Img.FileName),' Import : ', Dll,#10);
-      end;
-
-      if not load_sys_dll(uc,LowerCase(Dll)) then
-      begin
-        Writeln('Error While Loading Lib : ',Dll);
-        halt(-1);
-      end;
-    end;
-
-    rva := DllBase + Lib.IatRva;
-    if not Emulator.Libs.TryGetValue(LowerCase(Dll),SysDll) then
-    begin
-      Writeln('<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>');
-      Writeln(Format('>>>> Error %s import table has %s , but not Loaded In Cmulator <<<<',[img.FileName,Dll]));
-      Writeln('<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>');
-      halt(-1);
-    end;
-
-    for Fn in Lib.Functions do
-    begin
-      if Fn.Name <> '' then
-      begin
-        Hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(Lib.Name))) + '.' + Fn.Name);
-        if SysDll.FnByName.TryGetValue(Hash,HookFn) then
-        begin
-          FuncAddr := HookFn.VAddress;
-        end;
-      end
-      else
-      begin
-        Hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(Lib.Name))) + '.' + IntToStr(Fn.Ordinal));
-        if SysDll.FnByOrdinal.TryGetValue(Hash,HookFn) then
-        begin
-          FuncAddr := HookFn.VAddress;
-        end;
-      end;
-
-      if VerboseExx then
-      begin
-        write('  '); // indent
-        writeln(format('%s : Real rva: 0x%-8x - New : 0x%-8x',
-         [IfThen(fn.Name <> '',fn.Name,('#'+IntToStr(Fn.Ordinal))),rva,FuncAddr]));
-      end;
-
-      err := uc_mem_write_(uc,rva,@FuncAddr,Img.ImageWordSize);
-      if err <> UC_ERR_OK then
-      begin
-        Writeln('Func Name : ', Fn.Name);
-        Writeln('Error While Write Fn RVA , err : ',uc_strerror(err));
-        halt(-1);
-      end;
-
-      inc(rva, Img.ImageWordSize);
-    end;
-    inc(rva, Img.ImageWordSize); // null
-  end;
-  if VerboseEx then
-     Writeln('[---------------------------------------]'#10);
-end;
-
 procedure InitDll(uc : uc_engine; lib : TNewDll);
 var
   r_esp : UInt64;
+  Err : Integer;
 begin
-  if (lib.EntryPoint <> 0) and (not lib.Dllname.StartsWith('ntdll')) then
+  if (lib.EntryPoint <> 0) and (not lib.Dllname.StartsWith('ntdll'))
+  and (not lib.Dllname.StartsWith('crypt32')) then
   begin
-
     r_esp := ((Emulator.stack_base + Emulator.stack_size) - $100); // initial stack Pointer .
     uc_reg_write(uc, UC_X86_REG_ESP, @r_esp); //
+
     //TDllEntryProc = function(hinstDLL: HINST; fdwReason: DWORD; lpReserved: Pointer): BOOL; stdcall;
     Utils.push(0);         // lpReserved
     Utils.push(1);         // fdwReason
@@ -209,11 +108,14 @@ begin
        Emulator.RunOnDll := True;
 
     Emulator.ResetEFLAGS();
-    uc_emu_start(uc,lib.EntryPoint,lib.ImageSize,0,0);
+    Err := uc_emu_start(uc,lib.EntryPoint,lib.ImageSize,0,0);
+    if VerboseExx then
+      Writeln('[InitDll] Error --> ',uc_strerror(err));
     Emulator.RunOnDll := False;
+    Emulator.IsException := False;
+    Emulator.SEH_Handler := 0;
   end;
 end;
-
 
 function GetModulesCount(TLibsArray : TLibs) : Integer;
 var
@@ -244,6 +146,108 @@ begin
   end;
 end;
 
+
+procedure FixDllImports(uc : uc_engine; var Img: TPEImage; DllBase : UInt64);
+var
+  SysDll : TNewDll;
+  HookFn : TLibFunction;
+  Lib : TPEImportLibrary;
+  Fn  : TPEImportFunction;
+  Hash : UInt64;
+  rva , FuncAddr : TRVA;
+  err : uc_err;
+  LibName : string;
+begin
+  FuncAddr := 0; LibName := '';
+  if VerboseEx then
+  begin
+    Writeln('[---------------------------------------]');
+    Writeln('[           Fixing DLL Imports          ]');
+    Writeln('[*] File Name  : ',ExtractFileName(Img.FileName));
+  end;
+  // Scan libraries.
+  for Lib in Img.Imports.Libs do
+  begin
+    LibName := LowerCase(ExtractFileNameWithoutExt(ExtractFileName(lib.Name)) + '.dll');
+
+    if AnsiContainsStr(LibName,'ms-') then
+    begin
+      LibName := LowerCase(ExtractFileNameWithoutExt(ExtractFileName(string(GetDllFromApiSet(LibName))))) + '.dll';
+    end;
+    // If library not loaded then load it .
+
+    if not Emulator.Libs.ContainsKey(LowerCase(LibName)) then
+    begin
+      if VerboseEx then
+      begin
+        Writeln();
+        Writeln('[>] ',ExtractFileName(Img.FileName),' Import : ', LibName,#10);
+      end;
+
+      if not load_sys_dll(uc,LowerCase(LibName)) then
+      begin
+        Writeln('Error While Loading Lib : ',LibName);
+        halt(-1);
+      end;
+    end;
+
+    rva := DllBase + Lib.IatRva;
+    if not Emulator.Libs.TryGetValue(LowerCase(LibName),SysDll) then
+    begin
+      Writeln('<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>');
+      Writeln(Format('>>>> Error "%s" import table has "%s" , but not Loaded In Cmulator <<<<',[img.FileName,LibName]));
+      Writeln('<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>');
+      halt(-1);
+    end;
+
+    for Fn in Lib.Functions do
+    begin
+      if Fn.Name <> '' then
+      begin
+        Hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(LibName))) + '.' + Fn.Name);
+        if SysDll.FnByName.TryGetValue(Hash,HookFn) then
+        begin
+          FuncAddr := HookFn.VAddress;
+        end;
+      end
+      else
+      begin
+        Hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(LibName))) + '.' + IntToStr(Fn.Ordinal));
+        if SysDll.FnByOrdinal.TryGetValue(Hash,HookFn) then
+        begin
+          FuncAddr := HookFn.VAddress;
+        end;
+      end;
+
+      if VerboseExx then
+      begin
+        if FuncAddr = 0 then
+        begin
+          TextColor(LightRed);
+          Writeln(format('Lib name : %s --> %s -> %s',[Lib.Name,LibName,fn.Name]));
+          Writeln('Please Report this MSG in Github issues');
+          NormVideo;
+        end;
+
+        write('   '); // indent
+        writeln(format('%s : Real rva: 0x%-8x - New : 0x%-8x',
+         [IfThen(fn.Name <> '',fn.Name,('#'+IntToStr(Fn.Ordinal))),rva,FuncAddr]));
+      end;
+
+      err := uc_mem_write_(uc,rva,@FuncAddr,Img.ImageWordSize);
+      if err <> UC_ERR_OK then
+      begin
+        Writeln('Func Name : ', Fn.Name);
+        Writeln('Error While Write Fn RVA , err : ',uc_strerror(err));
+        halt(-1);
+      end;
+
+      inc(rva, Img.ImageWordSize);
+    end;
+    inc(rva, Img.ImageWordSize); // null
+  end;
+end;
+
 function load_sys_dll(uc : uc_engine; Dll : string) : boolean;
 var
   img: TPEImage;
@@ -259,7 +263,6 @@ var
   FName, LibName , FWName, FWLib,FWAPI : string;
   Hash : UInt64;
   IsOrdinal : Boolean;
-  //ret : Pointer;
 begin
 
   FLibrary := nil;
@@ -267,16 +270,18 @@ begin
   Result := false;
   Delta := 0;
 
+  // ApiSetMap redirect.
+  if AnsiContainsStr(Dll,'ms-') then
+  begin
+   Dll := String(GetDllFromApiSet(Dll));
+  end;
+
   Dll := LowerCase(ExtractFileNameWithoutExt(ExtractFileName(Dll)) + '.dll');
+  // if already loaded then return.
   if Emulator.Libs.ContainsKey(Trim(Dll)) then
     Exit(True);
 
-  if Emulator.isx64 then
-     Path := IncludeTrailingPathDelimiter(win64) + UnicodeString(LowerCase(Trim(Dll)))
-  else
-     Path := IncludeTrailingPathDelimiter(win32) + UnicodeString(LowerCase(Trim(Dll)));
-
-
+  Path := GetFullPath(Dll);
   if FileExists(Path) then
   begin
     //ret := AllocMem(UC_PAGE_SIZE);
@@ -300,13 +305,17 @@ begin
       if VerboseEx then
       begin
         Writeln('[---------------------------------------]');
-        Writeln('[        Mapping Library Exports        ]');
+        Writeln('[             Mapping Library           ]');
         writeln(format('[*] Lib Name    : %s',[LibName]));
+        Writeln(format('[*] File Size   : %d',[img.CalcRawSizeOfImage]));
         writeln(format('[*] Image Base  : %x',[img.ImageBase]));
+        Writeln(Format('[*] Loaded at   : %x',[Align(Emulator.DLL_NEXT_LOAD,UC_PAGE_SIZE*2),Emulator.DLL_NEXT_LOAD + img.SizeOfImage]));
+
+        Writeln(format('[*] Entry Point : %x',[img.EntryPointRVA]));
         Writeln(Format('[*] Image Size  : %x',[img.SizeOfImage]));
-        Writeln(Format('[*] Loaded at   : %x - End at %x',[Align(Emulator.DLL_NEXT_LOAD,UC_PAGE_SIZE*2),Emulator.DLL_NEXT_LOAD + img.SizeOfImage]));
         Writeln(Format('[*] BaseOfCode  : %x',[img.ImageBase + img.OptionalHeader.BaseOfCode]));
         Writeln(Format('[*] SizeOfCode  : %x',[img.OptionalHeader.SizeOfCode]));
+
         Writeln('[---------------------------------------]'#10);
       end;
 
@@ -418,6 +427,15 @@ begin
             // API is Forwarded ..
             FWName := sym.ForwarderName;
             sym.GetForwarderLibAndFuncName(FWLib,FWAPI);
+            if AnsiContainsStr(FWLib,'ms-') then
+            begin
+              FWLib := LowerCase(ExtractFileNameWithoutExt(ExtractFileName(string(GetDllFromApiSet(FWLib))))) + '.dll';
+              if not FileExistsUTF8(string(GetFullPath(FWLib))) then
+              begin
+                Writeln(Format('Library "%s" not found ! [3]',[GetFullPath(FWLib)]));
+                halt;
+              end;
+            end;
             VAddr := Utils.GetProcAddr(GetModulehandle(FWLib),FWAPI);
           end;
 
@@ -447,7 +465,6 @@ begin
       inc(Emulator.DLL_NEXT_LOAD, img.SizeOfImage);
       //inc(HOOK_INDEX);
 
-      // TODO: implement apisetschema Forwarder .
       FixDllImports(uc,img,DLL_BASE);
 
       // ReBuild Ldr for every new module loaded .
@@ -461,7 +478,7 @@ begin
   end
   else
   begin
-    Writeln(Format('Library "%s" not found ! [2]',[Dll])); Writeln();
+    Writeln(Format('Library "%s" not found ! [2]',[Path])); Writeln();
     halt(-1);
   end;
 
@@ -489,16 +506,18 @@ begin
   for Lib in Img.Imports.Libs do
   begin
     Dll := ExtractFileNameWithoutExt(ExtractFileName(lib.Name)) + '.dll';
-    if Emulator.isx64 then
-       Path := IncludeTrailingPathDelimiter(win64) + UnicodeString(LowerCase(Trim(Dll)))
-    else
-       Path := IncludeTrailingPathDelimiter(win32) + UnicodeString(LowerCase(Trim(Dll)));
+    if AnsiContainsStr(Dll,'ms-') then
+    begin
+      Dll := LowerCase(ExtractFileNameWithoutExt(ExtractFileName(string(GetDllFromApiSet(Dll))))) + '.dll';
+    end;
 
+    Path := GetFullPath(Dll);
     if not FileExists(Path) then
     begin
       Writeln('"',Dll,'" not found ! [3]');
       halt(-1);
     end;
+
     // If library not loaded then load it .
     if not Emulator.Libs.ContainsKey(LowerCase(Dll)) then
     begin
@@ -584,18 +603,6 @@ begin
       Result.WriteBuffer(tmp.Memory^,PE.OptionalHeader.SizeOfHeaders);
       Offset += PE.OptionalHeader.SizeOfHeaders;
 
-      if VerboseEx then
-      begin
-        Writeln('[---------------------------------------]');
-        Writeln('[             Start Mapping             ]');
-        Writeln('[*] File Name        : ' , ExtractFileName(PE.FileName));
-        Writeln('[*] File Size        : ', tmp.Size, ' Byte');
-        Writeln('[*] Image Base       : ', hexStr(PE.ImageBase,16));
-        Writeln('[*] Address Of Entry : ', hexStr(PE.EntryPointRVA,16));
-        Writeln('[*] Size Of Headers  : ', hexStr(PE.OptionalHeader.SizeOfHeaders,16));
-        Writeln('[*] Size Of Image    : ', hexStr(PE.SizeOfImage,16));
-      end;
-
       for sec in PE.Sections do
       begin
 
@@ -622,11 +629,11 @@ begin
         Result.WriteByte(0);
         Offset += 1;
       end;
-      if VerboseEx then
-      begin
-         Writeln('[+] File mapping completed √');
-         Writeln('[---------------------------------------]'#10);
-      end;
+      //if VerboseEx then
+      //begin
+      //   Writeln('[+] File mapping completed √');
+      //   Writeln('');
+      //end;
     end;
   finally
     tmp.free
@@ -683,14 +690,18 @@ begin
   // Scan libraries.
   for imp in PseFile.ImportTable do
   begin
+    if imp.DllName.IsEmpty then
+       Continue;
+
     Dll := ExtractFileNameWithoutExt(ExtractFileName(imp.DllName)) + '.dll';
+    if AnsiContainsStr(Dll,'ms-') then
+    begin
+      Dll := LowerCase(ExtractFileNameWithoutExt(ExtractFileName(string(GetDllFromApiSet(Dll))))) + '.dll';
+    end;
 
-    Writeln('[+] Fix IAT for : ',Dll);
+    Writeln(Format('[+] Fix IAT for : %-40s --> %s ',[imp.DllName, Dll]));
 
-    if Emulator.isx64 then
-       Path := IncludeTrailingPathDelimiter(win64) + UnicodeString(LowerCase(Trim(Dll)))
-    else
-       Path := IncludeTrailingPathDelimiter(win32) + UnicodeString(LowerCase(Trim(Dll)));
+    Path := GetFullPath(Dll);
 
     if not FileExists(Path) then
     begin
@@ -720,7 +731,7 @@ begin
     begin
       if api.Name <> '' then
       begin
-        Hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(imp.DllName))) + '.' + api.Name);
+        Hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(Dll))) + '.' + api.Name);
         if SysDll.FnByName.TryGetValue(Hash,HookFn) then
         begin
           FuncAddr := HookFn.VAddress;
@@ -728,7 +739,7 @@ begin
       end
       else
       begin
-        Hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(imp.DllName))) + '.' + IntToStr(api.Hint));
+        Hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(Dll))) + '.' + IntToStr(api.Hint));
         if SysDll.FnByOrdinal.TryGetValue(Hash,HookFn) then
         begin
           FuncAddr := HookFn.VAddress;

@@ -53,12 +53,16 @@ function ReadQword(Addr : UInt64) : Int64;
 
 function isprint(const AC: AnsiChar): boolean;
 
+function GetFullPath(name : string) : UnicodeString;
+function GetDllFromApiSet(name : string): UnicodeString;
+
 const
-  UC_PAGE_SIZE = $1000;
+  UC_PAGE_SIZE  = $1000;
+  EM_IMAGE_BASE = $400000;
 
 implementation
    uses
-     Globals,math,FnHook;
+     Globals,math,FnHook,Emu;
 
 function isprint(const AC: AnsiChar): boolean;
 begin
@@ -77,6 +81,62 @@ begin
       Break;
     end;
     Result := True;
+  end;
+end;
+
+function GetFullPath(name : string) : UnicodeString;
+begin
+  if Emulator.isx64 then
+     Result := IncludeTrailingPathDelimiter(win64) + UnicodeString(LowerCase(Trim(name)))
+  else
+     Result := IncludeTrailingPathDelimiter(win32) + UnicodeString(LowerCase(Trim(name)));
+end;
+
+function GetDllFromApiSet(name : string): UnicodeString;
+var
+  API : TApiRed;
+  Dll : string;
+  Path : UnicodeString;
+begin
+  Result := name;
+  Dll := ExtractFileNameWithoutExt(ExtractFileName(name));
+  if Emulator.ApiSetSchema.ContainsKey(Dll) then
+  begin
+    Emulator.ApiSetSchema.TryGetValue(Dll,API);
+    if API.count = 2 then
+    begin
+      Path := GetFullPath(API.last);
+      if FileExistsUTF8(string(Path)) then
+         Result := Path
+      else
+      begin
+        Path := GetFullPath(API.&alias);
+        if FileExistsUTF8(string(Path)) then
+           Result := Path
+        else
+        begin
+          Path := GetFullPath(API.first);
+          if FileExistsUTF8(string(Path)) then
+             Result := Path
+          else
+          begin
+            Writeln(Format('Library "%s" not found ! [5]',[Path]));
+            halt;
+          end;
+        end;
+      end;
+    end
+    else
+    begin
+      Path := GetFullPath(API.first);
+      if FileExistsUTF8(string(Path)) then
+         Result := Path
+      else
+      begin
+        Writeln(Format('Library "%s" not found ! [4]',[Path]));
+        halt;
+      end;
+    end;
   end;
 end;
 

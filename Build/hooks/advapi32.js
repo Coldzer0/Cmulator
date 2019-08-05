@@ -267,8 +267,6 @@ RegCloseKey.OnCallBack = function (Emu, API,ret) {
 };
 RegCloseKey.install('advapi32.dll', 'RegCloseKey');
 
-RegCloseKey.install('api-ms-win-core-localregistry-l1-1-0.dll', 'RegCloseKey');
-
 /*
 ###################################################################################################
 ###################################################################################################
@@ -373,9 +371,6 @@ RegOpenKeyEx.install('advapi32.dll', 'RegOpenKeyExA');
 RegOpenKeyEx.install('advapi32.dll', 'RegOpenKeyExW');
 
 
-RegOpenKeyEx.install('api-ms-win-core-localregistry-l1-1-0.dll', 'RegOpenKeyExA');
-RegOpenKeyEx.install('api-ms-win-core-localregistry-l1-1-0.dll', 'RegOpenKeyExW');
-
 /*
 ###################################################################################################
 ###################################################################################################
@@ -433,9 +428,6 @@ RegQueryValueEx.OnCallBack = function (Emu, API, ret) {
 
 RegQueryValueEx.install('advapi32.dll', 'RegQueryValueExA');
 RegQueryValueEx.install('advapi32.dll', 'RegQueryValueExW');
-
-RegQueryValueEx.install('api-ms-win-core-localregistry-l1-1-0.dll', 'RegQueryValueExA');
-RegQueryValueEx.install('api-ms-win-core-localregistry-l1-1-0.dll', 'RegQueryValueExW');
 
 
 /*

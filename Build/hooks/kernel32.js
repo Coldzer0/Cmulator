@@ -50,6 +50,17 @@ ExitProcess.install('ntdll.dll', 'RtlExitUserProcess');
 ExitProcess.install('ucrtbase.dll', 'exit');
 ExitProcess.install('ucrtbase.dll', '_Exit');
 
+
+/*
+###################################################################################################
+###################################################################################################
+*/
+
+
+/*
+TerminateProcess
+*/
+
 /*
 ###################################################################################################
 ###################################################################################################
@@ -70,9 +81,6 @@ IsDebuggerPresent.OnCallBack = function (Emu, API,ret) {
 };
 
 IsDebuggerPresent.install('kernel32.dll', 'IsDebuggerPresent');
-
-// TODO: remove after implementing apisetschema Forwarder .
-IsDebuggerPresent.install('api-ms-win-core-debug-l1-1-0.dll', 'IsDebuggerPresent');
 
 /*
 ###################################################################################################
@@ -145,9 +153,8 @@ GetModuleHandleW.OnCallBack = function (Emu, API,ret) {
 GetModuleHandleW.install('kernel32.dll', 'GetModuleHandleW');
 GetModuleHandleW.install('kernel32.dll', 'GetModuleHandleA');
 
-GetModuleHandleW.install('api-ms-win-core-libraryloader-l1-1-0.dll', 'GetModuleHandleW');
-// api-ms-win-core-libraryloader-l1-1-0.dll.GetModuleHandleW
-
+GetModuleHandleW.install('kernelbase.dll', 'GetModuleHandleW');
+GetModuleHandleW.install('kernelbase.dll', 'GetModuleHandleA');
 
 /*
 ###################################################################################################
@@ -265,7 +272,7 @@ LoadLibrary.OnCallBack = function (Emu, API,ret) {
 
 		log("{0}('{1}', 0x{2}, 0x{3}) = 0x{4}".format(
 			API.name,
-			Libname, 
+			Emu.GetModuleName(handle), 
 			hFile.toString(16),
 			dwFlags.toString(16),
 			handle.toString(16)
@@ -490,7 +497,7 @@ GetCurrentDirectory.OnCallBack = function (Emu, API, ret) {
 	var lpBuffer      = Emu.isx64 ? Emu.ReadReg(REG_RDX) : Emu.pop();
 
 	var len = 0;
-	var tmp = "C:\\pla";
+	var tmp = "C:\\Users\\Public\\Desktop";
 	
 	if (nBufferLength > 0){	
 		len = API.IsWapi ? Emu.WriteStringW(lpBuffer,tmp) : Emu.WriteStringA(lpBuffer,tmp);
@@ -717,7 +724,6 @@ typedef struct _OSVERSIONINFOEXA {
 GetVersionExW.install('kernel32.dll', 'GetVersionEx');
 GetVersionExW.install('kernel32.dll', 'GetVersionExA');
 GetVersionExW.install('kernel32.dll', 'GetVersionExW');
-GetVersionExW.install('api-ms-win-core-sysinfo-l1-1-0.dll', 'GetVersionExW');
 
 /*
 ###################################################################################################
@@ -825,8 +831,6 @@ LocalAlloc.OnCallBack = function (Emu, API, ret) {
 };
 LocalAlloc.install('kernel32.dll', 'LocalAlloc');
 
-LocalAlloc.install('api-ms-win-core-misc-l1-1-0.dll', 'LocalAlloc');
-
 /*
 ###################################################################################################
 ###################################################################################################
@@ -853,7 +857,6 @@ LocalFree.OnCallBack = function (Emu, API, ret) {
 	return true; // true if you handle it false if you want Emu to handle it and set PC .
 };
 LocalFree.install('kernel32.dll', 'LocalFree');
-LocalFree.install('api-ms-win-core-misc-l1-1-0.dll', 'LocalFree');
 
 /*
 ###################################################################################################
@@ -891,7 +894,6 @@ HeapCreate.OnCallBack = function (Emu, API, ret) {
 };
 
 HeapCreate.install('kernel32.dll', 'HeapCreate');
-HeapCreate.install('api-ms-win-core-heap-l1-1-0.dll', 'HeapCreate');
 
 /*
 ###################################################################################################
@@ -999,7 +1001,6 @@ HeapAlloc.OnCallBack = function (Emu, API, ret) {
 };
 
 HeapAlloc.install('kernel32.dll', 'HeapAlloc');
-HeapAlloc.install('api-ms-win-core-heap-l1-1-0.dll', 'HeapAlloc');
 
 /*
 ###################################################################################################
@@ -1289,7 +1290,6 @@ HeapDestroy.OnCallBack = function (Emu, API, ret) {
 };
 
 HeapDestroy.install('kernel32.dll', 'HeapDestroy');
-HeapDestroy.install('api-ms-win-core-heap-l1-1-0.dll', 'HeapDestroy');
 
 /*
 ###################################################################################################
@@ -1324,7 +1324,6 @@ HeapSize.OnCallBack = function (Emu, API, ret) {
 };
 
 HeapSize.install('kernel32.dll', 'HeapSize');
-HeapSize.install('api-ms-win-core-heap-l1-1-0.dll', 'HeapSize');
 
 /*
 ###################################################################################################
@@ -1433,7 +1432,6 @@ GetACP.OnCallBack = function (Emu, API, ret) {
 };
 
 GetACP.install('kernel32.dll', 'GetACP');
-GetACP.install('api-ms-win-core-localization-l1-1-0.dll', 'GetACP');
 
 /*
 ###################################################################################################
@@ -1466,7 +1464,6 @@ GetCPInfo.OnCallBack = function (Emu, API, ret) {
 };
 
 GetCPInfo.install('kernel32.dll', 'GetCPInfo');
-GetCPInfo.install('api-ms-win-core-localization-l1-1-0.dll', 'GetCPInfo');
 
 /*
 ###################################################################################################
@@ -1517,11 +1514,11 @@ GetModuleFileName.OnCallBack = function (Emu, API, ret) {
 	var nSize	   = Emu.isx64 ? Emu.ReadReg(REG_R8D) : Emu.pop();
 
 	var mName = Emu.GetModuleName(hModule);
-	var Path = 'C:\\pla\\' + mName;
+	var Path = 'C:\\Users\\Public\\Desktop\\' + mName;
 
 	var len = API.IsWapi ? Emu.WriteStringW(lpFilename,Path) : Emu.WriteStringA(lpFilename,Path);
 
-	// null byte - mybe needed maybe not :D - i put it anyway :V 
+	// null byte :V 
 	API.IsWapi ? Emu.WriteWord(lpFilename + (len * 2),0) : Emu.WriteByte(lpFilename+len,0);
 
 	print("GetModuleFileName{0}(0x{1}, 0x{2}, 0x{3}) = '{4}'".format(
@@ -1540,9 +1537,6 @@ GetModuleFileName.OnCallBack = function (Emu, API, ret) {
 
 GetModuleFileName.install('kernel32.dll', 'GetModuleFileNameA');
 GetModuleFileName.install('kernel32.dll', 'GetModuleFileNameW');
-GetModuleFileName.install('api-ms-win-core-libraryloader-l1-1-0.dll', 'GetModuleFileNameA');
-GetModuleFileName.install('api-ms-win-core-libraryloader-l1-1-0.dll', 'GetModuleFileNameW');
-
 
 /*
 ###################################################################################################
@@ -1574,8 +1568,6 @@ EncodePointer.OnCallBack = function (Emu, API,ret) {
 };
 EncodePointer.install('kernel32.dll', 'EncodePointer');
 EncodePointer.install('msvcr90.dll', '_encode_pointer');
-EncodePointer.install('api-ms-win-core-util-l1-1-0.dll', 'EncodePointer');
-
 EncodePointer.install('ntdll.dll', 'RtlEncodePointer');
 /*
 ###################################################################################################
@@ -1607,8 +1599,6 @@ DecodePointer.OnCallBack = function (Emu, API,ret) {
 	return true; 
 };
 DecodePointer.install('kernel32.dll', 'DecodePointer');
-DecodePointer.install('api-ms-win-core-util-l1-1-0.dll', 'DecodePointer');
-
 DecodePointer.install('msvcr90.dll', '_decode_pointer');
 
 
@@ -1644,8 +1634,6 @@ InitializeCriticalSectionAndSpinCount.OnCallBack = function (Emu, API,ret) {
 };
 InitializeCriticalSectionAndSpinCount.install('kernel32.dll', 'InitializeCriticalSectionAndSpinCount');
 
-InitializeCriticalSectionAndSpinCount.install('api-ms-win-core-synch-l1-1-0.dll', 'InitializeCriticalSectionAndSpinCount');
-
 /*
 ###################################################################################################
 ###################################################################################################
@@ -1678,7 +1666,6 @@ InitializeCriticalSectionEx.OnCallBack = function (Emu, API,ret) {
 	return true; 
 };
 InitializeCriticalSectionEx.install('kernel32.dll', 'InitializeCriticalSectionEx');
-InitializeCriticalSectionEx.install('api-ms-win-core-synch-l1-1-0.dll', 'InitializeCriticalSectionEx');
 
 /*
 ###################################################################################################
@@ -1704,8 +1691,6 @@ InitializeCriticalSection.OnCallBack = function (Emu, API,ret) {
 	return true; 
 };
 InitializeCriticalSection.install('kernel32.dll', 'InitializeCriticalSection');
-
-InitializeCriticalSection.install('api-ms-win-core-synch-l1-1-0.dll', 'InitializeCriticalSection');
 
 /*
 ###################################################################################################
@@ -1757,9 +1742,6 @@ _STARTUPINFOW   struc ; (sizeof=0x44, align=0x4, copyof_14)
 GetStartupInfo.install('kernel32.dll', 'GetStartupInfoA');
 GetStartupInfo.install('kernel32.dll', 'GetStartupInfoW');
 
-GetStartupInfo.install('api-ms-win-core-processthreads-l1-1-0.dll', 'GetStartupInfoW');
-
-
 /*
 ###################################################################################################
 ###################################################################################################
@@ -1785,8 +1767,7 @@ GetSystemTimeAsFileTime.OnCallBack = function (Emu, API, ret) {
 	return true; // true if you handle it false if you want Emu to handle it and set PC .
 };
 GetSystemTimeAsFileTime.install('kernel32.dll', 'GetSystemTimeAsFileTime');
-GetSystemTimeAsFileTime.install('api-ms-win-core-sysinfo-l1-1-0.dll', 'GetSystemTimeAsFileTime');
-
+GetSystemTimeAsFileTime.install('kernelbase.dll', 'GetSystemTimeAsFileTime');
 
 /*
 ###################################################################################################
@@ -1821,8 +1802,7 @@ GetTickCount.OnCallBack = function (Emu, API, ret) {
 	return true;
 };
 GetTickCount.install('kernel32.dll', 'GetTickCount');
-GetTickCount.install('api-ms-win-core-sysinfo-l1-1-0.dll', 'GetTickCount');
-
+GetTickCount.install('kernelbase.dll', 'GetTickCount');
 
 /*
 ###################################################################################################
@@ -1850,7 +1830,6 @@ QueryPerformanceCounter.OnCallBack = function (Emu, API, ret) {
 	return true;
 };
 QueryPerformanceCounter.install('kernel32.dll', 'QueryPerformanceCounter');
-QueryPerformanceCounter.install('api-ms-win-core-profile-l1-1-0.dll', 'QueryPerformanceCounter');
 
 /*
 ###################################################################################################
@@ -1868,7 +1847,7 @@ GetCommandLine.OnCallBack = function (Emu, API, ret) {
 	var cmd = API.IsWapi ? (0x40000000 + 0x30000) : (0x40000000 + 0x31000); // TODO implement memory mng .
 
 	var mName = Emu.GetModuleName(0); // Current module .
-	var Path = '"C:\\pla\\' + mName + '"'; // :D 
+	var Path = '"C:\\Users\\Public\\Desktop\\' + mName + '"'; // :D 
 
 	API.IsWapi ? Emu.WriteStringW(cmd,Path) : Emu.WriteStringA(cmd,Path);
 
@@ -1886,9 +1865,6 @@ GetCommandLine.OnCallBack = function (Emu, API, ret) {
 
 GetCommandLine.install('kernel32.dll', 'GetCommandLineA');
 GetCommandLine.install('kernel32.dll', 'GetCommandLineW');
-
-GetCommandLine.install('api-ms-win-core-processenvironment-l1-1-0.dll', 'GetCommandLineA');
-GetCommandLine.install('api-ms-win-core-processenvironment-l1-1-0.dll', 'GetCommandLineW');
 
 /*
 ###################################################################################################
@@ -1929,9 +1905,6 @@ GetEnvironmentStrings.OnCallBack = function (Emu, API, ret) {
 GetEnvironmentStrings.install('kernel32.dll', 'GetEnvironmentStringsA');
 GetEnvironmentStrings.install('kernel32.dll', 'GetEnvironmentStringsW');
 
-GetEnvironmentStrings.install('api-ms-win-core-processenvironment-l1-1-0.dll', 'GetEnvironmentStringsA');
-GetEnvironmentStrings.install('api-ms-win-core-processenvironment-l1-1-0.dll', 'GetEnvironmentStringsW');
-
 /*
 ###################################################################################################
 ###################################################################################################
@@ -1961,9 +1934,6 @@ FreeEnvironmentStrings.OnCallBack = function (Emu, API, ret) {
 
 FreeEnvironmentStrings.install('kernel32.dll', 'FreeEnvironmentStringsA');
 FreeEnvironmentStrings.install('kernel32.dll', 'FreeEnvironmentStringsW');
-
-FreeEnvironmentStrings.install('api-ms-win-core-processenvironment-l1-1-0.dll', 'FreeEnvironmentStringsA');
-FreeEnvironmentStrings.install('api-ms-win-core-processenvironment-l1-1-0.dll', 'FreeEnvironmentStringsW');
 
 /*
 ###################################################################################################
@@ -2116,7 +2086,6 @@ GetSystemTime.OnCallBack = function (Emu, API, ret) {
 };
 GetSystemTime.install('kernel32.dll', 'GetSystemTime');
 GetSystemTime.install('kernel32.dll', 'GetLocalTime');
-GetSystemTime.install('api-ms-win-core-sysinfo-l1-1-0.dll', 'GetLocalTime');
 
 /*
 ###################################################################################################
@@ -2165,7 +2134,6 @@ InterlockedCompareExchange.OnCallBack = function (Emu, API,ret) {
 	return true; // let lib handle it
 };
 InterlockedCompareExchange.install('kernel32.dll', 'InterlockedCompareExchange');
-InterlockedCompareExchange.install('api-ms-win-core-interlocked-l1-1-0.dll', 'InterlockedCompareExchange');
 
 /*
 ###################################################################################################
@@ -2180,7 +2148,7 @@ InterlockedExchange.OnCallBack = function (Emu, API,ret) {
 	return true; // let lib handle it
 };
 InterlockedExchange.install('kernel32.dll', 'InterlockedExchange');
-InterlockedExchange.install('api-ms-win-core-interlocked-l1-1-0.dll', 'InterlockedExchange');
+InterlockedExchange.install('kernelbase.dll', 'InterlockedExchange');
 
 /*
 ###################################################################################################
@@ -2207,7 +2175,7 @@ DisableThreadLibraryCalls.OnCallBack = function (Emu, API,ret) {
 	return true; 
 };
 DisableThreadLibraryCalls.install('kernel32.dll', 'DisableThreadLibraryCalls');
-DisableThreadLibraryCalls.install('api-ms-win-core-libraryloader-l1-1-0.dll', 'DisableThreadLibraryCalls');
+DisableThreadLibraryCalls.install('kernelbase.dll', 'DisableThreadLibraryCalls');
 
 /*
 ###################################################################################################
@@ -2230,12 +2198,11 @@ GetStdHandle.OnCallBack = function (Emu, API,ret) {
 		nStdHandle.toString(16)
 	));
 
-	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 0);
+	Emu.SetReg(Emu.isx64 ? REG_RAX : REG_EAX, 0xC0C0);
 	Emu.SetReg(Emu.isx64 ? REG_RIP : REG_EIP, ret);
 	return true; 
 };
 GetStdHandle.install('kernel32.dll', 'GetStdHandle');
-GetStdHandle.install('api-ms-win-core-processenvironment-l1-1-0.dll', 'GetStdHandle');
 
 /*
 ###################################################################################################
@@ -2264,7 +2231,6 @@ SetHandleCount.OnCallBack = function (Emu, API,ret) {
 	return true; 
 };
 SetHandleCount.install('kernel32.dll', 'SetHandleCount');
-SetHandleCount.install('api-ms-win-core-misc-l1-1-0.dll', 'SetHandleCount');
 
 /*
 ###################################################################################################
@@ -2292,7 +2258,6 @@ GetFileType.OnCallBack = function (Emu, API,ret) {
 	return true; 
 };
 GetFileType.install('kernel32.dll', 'GetFileType');
-GetFileType.install('api-ms-win-core-file-l1-1-0.dll', 'GetFileType');
 
 /*
 ###################################################################################################

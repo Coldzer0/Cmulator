@@ -12,7 +12,7 @@ uses
   Classes, SysUtils,cmem,Crt,
   strutils,LazUTF8,math,LazFileUtils,
   Unicorn_dyn , UnicornConst, X86Const,
-  Segments,Utils,PE_loader,xxHash,
+  Segments,Utils,PE_loader,xxHash,superobject,
   PE.Image,
   PE.Section,
   PE.ExportSym,
@@ -44,6 +44,15 @@ type
     value   : Int64;
     size    : UInt32;
   end;
+
+  TApiRed = record
+    count : Byte;
+    first,
+    last,
+    &alias : string;
+  end;
+
+  TApiSetSchema = TFastHashMap<String, TApiRed>;
 
 { TEmu }
   TEmu = class
@@ -86,7 +95,6 @@ type
     r_cs,r_ss,r_ds,r_es,r_fs,r_gs : DWORD;
 
     MemFix : TStack<UInt64>;
-
     FlushMem : TStack<flush_r>;
 
     RunOnDll, IsException : Boolean;
@@ -98,13 +106,15 @@ type
     stack_size : Cardinal;
     stack_base,stack_limit : UInt64;
 
+    PID : Cardinal;
+
     Img: TPEImage;
     uc : uc_engine;
 
     Hooks : THooks;
 
 
-    PID : Cardinal;
+    ApiSetSchema : TApiSetSchema;
 
     property TEB : UInt64 read TEB_Address write TEB_Address;
     property PEB : UInt64 read PEB_address write PEB_address;
@@ -518,8 +528,8 @@ begin
             so the first Check by name will fail so we need to Check the
               Ordinal One :D .
           }
-          // todo: check this code , i think it should be: "> 0" not "= 0" .
-          if (Hook.FuncName.IsEmpty) and  (Hook.ordinal = 0) then
+          // todo: check this code with some malformed samples for testing.
+          if (Hook.FuncName.IsEmpty) and  (Hook.ordinal > 0) then
             Emulator.Hooks.ByOrdinal.TryGetValue(API.ordinal,Hook);
         end;
 
@@ -553,7 +563,7 @@ begin
         end
         else
         begin
-          if not Emulator.RunOnDll then
+          if VerboseEx or (not Emulator.RunOnDll) then
           begin
             TextColor(Crt.LightRed);
             Writeln();
@@ -835,7 +845,8 @@ begin
       reg_write_x32(uc,UC_X86_REG_EAX,RandomRange(100,500));
       reg_write_x32(uc,UC_X86_REG_EDX,$0);
 
-      Writeln(Format('rdtsc at 0x%x',[PC]));
+      if not Emulator.RunOnDll then
+         Writeln(Format('rdtsc at 0x%x',[PC]));
 
       PC += size;
       Emulator.err := uc_reg_write(uc, ifthen(Emulator.Is_x64,UC_X86_REG_RIP,UC_X86_REG_EIP), @PC);
@@ -844,7 +855,8 @@ begin
     if (code[0] = $F) and (code[1] = $A2) then
     begin
       reg_write_x32(uc,UC_X86_REG_EAX,0);
-      Writeln(Format('CPUID at 0x%x',[PC]));
+      if not Emulator.RunOnDll then
+         Writeln(Format('CPUID at 0x%x',[PC]));
       //PC += size;
       //Emulator.err := uc_reg_write(uc, ifthen(Emulator.Is_x64,UC_X86_REG_RIP,UC_X86_REG_EIP), @PC);
     end;
@@ -1056,7 +1068,7 @@ begin
     begin
       if Assigned(SCode) then
       begin
-        Writeln('[*] Writing Shellcode to memory ...');
+        Writeln('[√] Writing Shellcode to memory ...');
         if uc_mem_write_(uc,img.ImageBase + Img.EntryPointRVA,SCode.Memory,SCode.Size) = UC_ERR_OK then
         begin
           Writeln('[√] Shellcode Written to Unicorn');
@@ -1323,6 +1335,41 @@ begin
   Writeln();
 end;
 
+procedure LoadApiSetSchema(var ApiSetSchema : TApiSetSchema);
+var
+  Redirect : TApiRed;
+  JSON : TStrings;
+  APIS, item : ISuperObject;
+  name : string;
+begin
+  name := '';
+  JSON := TStringList.Create();
+  try
+     JSON.LoadFromFile(string(ApiSetSchemaPath));
+     APIS := SO(UnicodeString(JSON.Text));
+     for item in APIS['WIN7_APIS'] do
+     begin
+       Redirect.first := string(item.S['red.F']);
+       Redirect.last  := string(item.S['red.L']);
+       Redirect.count := item.I['count'];
+       name := string(item.S['name']);
+       ApiSetSchema.AddOrSetValue(LowerCase(name),Redirect);
+     end;
+
+     for item in APIS['WIN10_APIS'] do
+     begin
+       Redirect.first := string(item.S['red[0]']);
+       Redirect.last  := string(item.S['red[1]']);
+       Redirect.count := item.I['count'];
+       Redirect.&alias := string(item.S['alias']);
+       name := string(item.S['name']);
+       ApiSetSchema.AddOrSetValue(LowerCase(name),Redirect);
+     end;
+  finally
+    JSON.Free;
+  end;
+end;
+
 constructor TEmu.Create(_FilePath : string; _ShellCode, SCx64 : Boolean);
 begin
   // Until Unicorn Engine fix it :D
@@ -1346,6 +1393,9 @@ begin
   Hooks.ByName    := THookByName.Create();
   Hooks.ByOrdinal := THookByOrdinal.Create();
   Hooks.ByAddr    := THookByAddress.Create();
+
+  ApiSetSchema := TFastHashMap<String, TApiRed>.Create();
+  LoadApiSetSchema(ApiSetSchema);
 
   if isShellCode then
   begin
@@ -1454,6 +1504,12 @@ begin
   begin
     FlushMem.Clear;
     FreeAndNil(FlushMem);
+  end;
+
+  if Assigned(ApiSetSchema) then
+  begin
+    ApiSetSchema.Clear;
+    FreeAndNil(ApiSetSchema);
   end;
 
   inherited Destroy;

@@ -32,7 +32,7 @@ const
     UNICORN_LIB = './libunicorn.so';
 {$endif}
 {$ifdef mswindows}
-    UNICORN_LIB = {$IFDEF CPU64}'./unicorn64.dll'{$ELSE}'./unicorn32.dll'{$ENDIF};
+    UNICORN_LIB = {$IFDEF CPU64}'./unicorn64.dll'{$ELSE}'unicorn32.dll'{$ENDIF};
 {$endif}
 
 type
@@ -670,12 +670,12 @@ begin
   begin
     {$IFDEF FPC}TextColor(LightRed);{$ENDIF}
     LastError := {$IFDEF FPC}GetLoadErrorStr;{$ELSE}
-      {$ifdef mswindows}
+      {$ifdef windows}
        SysErrorMessage(GetLastError,UC_Handle);
        SetLastError(0);
       {$ENDIF}
     {$ENDIF}
-    WriteLn('error while loading unicorn library : ',LastError,#10);
+    WriteLn('error while loading unicorn library : ',UNICORN_LIB, ' -> ' ,LastError,#10);
     {$IFDEF FPC}NormVideo;{$ENDIF}
   end;
 end;

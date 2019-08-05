@@ -5,10 +5,10 @@ unit JSEmuObj;
 interface
 
 uses
-  Classes, SysUtils,
+  Classes, SysUtils,strutils,
   {$I besenunits.inc},
   FnHook,Emu,Utils,
-  Unicorn_dyn, UnicornConst, X86Const,
+  Unicorn_dyn, UnicornConst,
   LazFileUtils,LazUTF8,PE_Loader;
 
 type
@@ -122,7 +122,6 @@ begin
     Error();
 
   Emulator.err := uc_reg_write(Emulator.uc,REG,@value);
-
   ResultValue := BESENBooleanValue(Emulator.err = UC_ERR_OK);
 end;
 
@@ -254,7 +253,7 @@ procedure TEmuObj.LoadLibrary(const ThisArgument : TBESENValue;
   Arguments : PPBESENValues; CountArguments : integer;
   var ResultValue : TBESENValue);
 var
-  Libname : AnsiString;
+  Libname, RedirectLib : AnsiString;
   JSvalue : PBESENValue;
   Lib : TNewDll;
 begin
@@ -267,7 +266,14 @@ begin
     else
       raise EBESENError.Create('LoadLibrary Arg must be String ! - Ex: LoadLibrary(''kernel32.dll'')');
 
-    Libname := Trim(ExtractFileNameWithoutExt(LowerCase(ExtractFileName(Libname))) + '.dll');
+
+    RedirectLib := String(GetDllFromApiSet(Libname));
+
+    // this was here for debugging :P .
+    //if AnsiContainsStr(Libname,'ms-') then
+       //Writeln('Resolve lib : ',Libname ,' --> to : ',ExtractFileName(RedirectLib));
+
+    Libname := Trim(ExtractFileNameWithoutExt(LowerCase(ExtractFileName(RedirectLib))) + '.dll');
 
     if Emulator.Libs.TryGetValue(Libname,Lib) then
     begin

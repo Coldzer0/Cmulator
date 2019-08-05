@@ -30,7 +30,8 @@ var
   win32 : UnicodeString = '';
   win64 : UnicodeString = '';
 
-  JSAPI : AnsiString = '';
+  JSAPI : UnicodeString = '';
+  ApiSetSchemaPath : UnicodeString = '';
 
 implementation
 

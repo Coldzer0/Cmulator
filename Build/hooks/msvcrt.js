@@ -741,7 +741,7 @@ Generic.install('msvcr90.dll', '_invalid_parameter');
 
 Generic.install('msvcr90.dll', '_initptd');
 Generic.install('msvcr90.dll', '_encoded_null');
-
+Generic.install('msvcrt.dll', '_except_handler4_common');
 
 
 Generic.install('vcruntime140.dll', '__telemetry_main_invoke_trigger');
@@ -752,7 +752,7 @@ Generic.install('ucrtbase.dll', '__p___argv');
 Generic.install('ucrtbase.dll', '__p___argc');
 
 
-
+Generic.install('ucrtbase.dll', '__report_gsfailure');
 
 /*
 ###################################################################################################

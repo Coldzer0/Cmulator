@@ -26,16 +26,3 @@ KBGetThreadLocale.install('kernelbase.dll', 'GetThreadLocale');
 ###################################################################################################
 ###################################################################################################
 */
-
-var InterlockedCompareExchange = new ApiHook();
-InterlockedCompareExchange.OnCallBack = function (Emu, API, ret) {
-
-	// just let the library handle it :D 
-	return true;
-};
-
-InterlockedCompareExchange.install('kernelbase.dll', 'InterlockedCompareExchange');
-/*
-###################################################################################################
-###################################################################################################
-*/

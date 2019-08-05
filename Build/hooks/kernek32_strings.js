@@ -56,7 +56,6 @@ MultiByteToWideChar.OnCallBack = function (Emu, API, ret) {
 };
 
 MultiByteToWideChar.install('kernel32.dll', 'MultiByteToWideChar');
-MultiByteToWideChar.install('api-ms-win-core-string-l1-1-0.dll', 'MultiByteToWideChar');
 
 /*
 ###################################################################################################
@@ -114,7 +113,6 @@ WideCharToMultiByte.OnCallBack = function (Emu, API, ret) {
 };
 
 WideCharToMultiByte.install('kernel32.dll', 'WideCharToMultiByte');
-WideCharToMultiByte.install('api-ms-win-core-string-l1-1-0.dll', 'WideCharToMultiByte');
 
 /*
 ###################################################################################################
@@ -174,8 +172,6 @@ LCMapString.OnCallBack = function (Emu, API, ret) {
 
 LCMapString.install('kernel32.dll', 'LCMapStringA');
 LCMapString.install('kernel32.dll', 'LCMapStringW');
-
-LCMapString.install('api-ms-win-core-localization-l1-1-0.dll', 'LCMapStringW');
 
 
 /*
@@ -255,7 +251,6 @@ GetStringTypeW.OnCallBack = function (Emu, API, ret) {
 };
 
 GetStringTypeW.install('kernel32.dll', 'GetStringTypeW');
-GetStringTypeW.install('api-ms-win-core-string-l1-1-0.dll', 'GetStringTypeW');
 
 /*
 ###################################################################################################
@@ -297,8 +292,6 @@ lstrlen.OnCallBack = function (Emu, API, ret) {
 lstrlen.install('kernel32.dll', 'lstrlen');
 lstrlen.install('kernelbase.dll', 'lstrlenW');
 lstrlen.install('kernelbase.dll', 'lstrlenA');
-lstrlen.install('api-ms-win-core-misc-l1-1-0.dll', 'lstrlenW');
-lstrlen.install('api-ms-win-core-misc-l1-1-0.dll', 'lstrlenA');
 lstrlen.install('kernel32.dll', 'lstrlenW');
 lstrlen.install('kernel32.dll', 'lstrlenA');
 

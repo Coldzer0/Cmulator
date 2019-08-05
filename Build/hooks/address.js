@@ -1,4 +1,14 @@
+// var _parse_cmdline = new ApiHook();
+// _parse_cmdline.OnCallBack = function () {
 
+// 	var PC = Emu.ReadDword(Emu.ReadReg(REG_ESP));
+
+// 	info('PC : 0x',PC.toString(16));
+
+// 	info(Emu.SetReg(REG_EIP, PC));
+//     return true;
+// };
+// _parse_cmdline.install(0x00403383);
 
 // _wcmdln fix
 

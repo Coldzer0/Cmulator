@@ -11,12 +11,13 @@
       <SessionStorage Value="InProjectDir"/>
       <MainUnit Value="0"/>
       <Title Value="Cmulator"/>
+      <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
     </General>
     <MacroValues Count="1">
       <Macro1 Name="LCLWidgetType" Value="nogui"/>
     </MacroValues>
-    <BuildModes Count="6">
+    <BuildModes Count="8">
       <Item1 Name="Debug_linux" Default="True"/>
       <Item2 Name="Release_linux">
         <MacroValues Count="1">
@@ -29,7 +30,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Capstone;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON"/>
+            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON;Build/libraries/linux"/>
             <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
@@ -40,6 +41,8 @@
           </Parsing>
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
+            <TargetCPU Value="x86_64"/>
+            <TargetOS Value="linux"/>
             <Optimizations>
               <OptimizationLevel Value="3"/>
             </Optimizations>
@@ -50,6 +53,11 @@
             </Debugging>
             <LinkSmart Value="True"/>
           </Linking>
+          <Other>
+            <ConfigFile>
+              <ConfigFilePath Value="/sw/etc/fpc.cfg"/>
+            </ConfigFile>
+          </Other>
         </CompilerOptions>
       </Item2>
       <Item3 Name="OSX_Release">
@@ -63,7 +71,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Capstone;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON"/>
+            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/generics_collections/src;Core/unicorn;Core/process;Core/Zydis;Core/GUI;Core/JSON;Build/libraries/osx"/>
             <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
@@ -98,7 +106,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON"/>
+            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON;Build/libraries/osx"/>
             <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
@@ -109,6 +117,9 @@
           </Parsing>
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
+            <Optimizations>
+              <OptimizationLevel Value="0"/>
+            </Optimizations>
           </CodeGeneration>
           <Linking>
             <Debugging>
@@ -121,7 +132,10 @@
           </Linking>
         </CompilerOptions>
       </Item4>
-      <Item5 Name="Debug_windows">
+      <Item5 Name="Debug_windows_x32">
+        <MacroValues Count="1">
+          <Macro1 Name="LCLWidgetType" Value="nogui"/>
+        </MacroValues>
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
@@ -129,7 +143,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Capstone;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON"/>
+            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON;Build/libraries/win64"/>
             <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
@@ -159,7 +173,10 @@
           </Linking>
         </CompilerOptions>
       </Item5>
-      <Item6 Name="Release_windows">
+      <Item6 Name="Release_windows_x32">
+        <MacroValues Count="1">
+          <Macro1 Name="LCLWidgetType" Value="nogui"/>
+        </MacroValues>
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
@@ -167,7 +184,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Capstone;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON"/>
+            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON;Build/libraries/win32"/>
             <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
@@ -178,7 +195,8 @@
           </Parsing>
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
-            <TargetCPU Value="x86_64"/>
+            <TargetCPU Value="i386"/>
+            <TargetOS Value="win32"/>
             <Optimizations>
               <OptimizationLevel Value="3"/>
             </Optimizations>
@@ -191,9 +209,86 @@
           </Linking>
         </CompilerOptions>
       </Item6>
+      <Item7 Name="Debug_windows_x64">
+        <MacroValues Count="1">
+          <Macro1 Name="LCLWidgetType" Value="nogui"/>
+        </MacroValues>
+        <CompilerOptions>
+          <Version Value="11"/>
+          <Target>
+            <Filename Value="Build/win/32/Cmulator"/>
+          </Target>
+          <SearchPaths>
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON;Build/libraries/win64"/>
+            <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
+          </SearchPaths>
+          <Parsing>
+            <SyntaxOptions>
+              <SyntaxMode Value="Delphi"/>
+              <IncludeAssertionCode Value="True"/>
+              <CStyleMacros Value="True"/>
+            </SyntaxOptions>
+          </Parsing>
+          <CodeGeneration>
+            <Checks>
+              <IOChecks Value="True"/>
+              <RangeChecks Value="True"/>
+              <OverflowChecks Value="True"/>
+              <StackChecks Value="True"/>
+            </Checks>
+            <VerifyObjMethodCallValidity Value="True"/>
+            <TargetCPU Value="x86_64"/>
+          </CodeGeneration>
+          <Linking>
+            <Debugging>
+              <DebugInfoType Value="dsDwarf2Set"/>
+              <UseHeaptrc Value="True"/>
+              <TrashVariables Value="True"/>
+              <UseExternalDbgSyms Value="True"/>
+            </Debugging>
+          </Linking>
+        </CompilerOptions>
+      </Item7>
+      <Item8 Name="Release_windows_x64">
+        <MacroValues Count="1">
+          <Macro1 Name="LCLWidgetType" Value="nogui"/>
+        </MacroValues>
+        <CompilerOptions>
+          <Version Value="11"/>
+          <Target>
+            <Filename Value="Build/win/64/Cmulator"/>
+          </Target>
+          <SearchPaths>
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON;Build/libraries/win64"/>
+            <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
+          </SearchPaths>
+          <Parsing>
+            <SyntaxOptions>
+              <SyntaxMode Value="Delphi"/>
+              <CStyleMacros Value="True"/>
+            </SyntaxOptions>
+          </Parsing>
+          <CodeGeneration>
+            <SmartLinkUnit Value="True"/>
+            <TargetCPU Value="x86_64"/>
+            <TargetOS Value="win64"/>
+            <Optimizations>
+              <OptimizationLevel Value="3"/>
+            </Optimizations>
+          </CodeGeneration>
+          <Linking>
+            <Debugging>
+              <GenerateDebugInfo Value="False"/>
+            </Debugging>
+            <LinkSmart Value="True"/>
+          </Linking>
+        </CompilerOptions>
+      </Item8>
       <SharedMatrixOptions Count="2">
-        <Item1 ID="917770631570" Modes="Debug_linux,Release_linux,OSX_Release,OSX_Debug" Type="IDEMacro" MacroName="LCLWidgetType" Value="nogui"/>
-        <Item2 ID="547003491806" Modes="OSX_Debug" Value="-Fl/Users/Coldzer0/cold/DISASM/Cmulator/Build/OSX"/>
+        <Item1 ID="917770631570" Modes="Debug_linux,Release_linux,OSX_Release,OSX_Debug,Debug_windows_x32,Release_windows_x32,Debug_windows_x64,Release_windows_x64" Type="IDEMacro" MacroName="LCLWidgetType" Value="nogui"/>
+        <Item2 ID="741569211698" Modes="Release_linux" Value="-st"/>
       </SharedMatrixOptions>
     </BuildModes>
     <PublishOptions>
@@ -201,13 +296,13 @@
     </PublishOptions>
     <RunParams>
       <local>
-        <CommandLineParams Value="-f ../../samples/obfuscated/obfuscated.exe -ex"/>
+        <CommandLineParams Value="-f ../../samples/AntiDebugDownloader.exe"/>
       </local>
       <FormatVersion Value="2"/>
       <Modes Count="1">
         <Mode0 Name="default">
           <local>
-            <CommandLineParams Value="-f ../../samples/obfuscated/obfuscated.exe -ex"/>
+            <CommandLineParams Value="-f ../../samples/AntiDebugDownloader.exe"/>
           </local>
         </Mode0>
       </Modes>
@@ -304,7 +399,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Capstone;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON"/>
+      <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON"/>
       <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>

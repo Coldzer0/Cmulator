@@ -45,6 +45,7 @@ __recovery/
 samples/VMProtect
 PEParser
 Core/Duktabe
+Core/QJS
 unicorn-engine-pascal
 CTF
 GDT

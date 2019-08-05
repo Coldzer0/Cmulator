@@ -224,7 +224,6 @@ DeleteCriticalSection.OnCallBack = function (Emu, API, ret) {
 };
 DeleteCriticalSection.install('kernelbase.dll', 'DeleteCriticalSection');
 DeleteCriticalSection.install('kernel32.dll', 'DeleteCriticalSection');
-DeleteCriticalSection.install('api-ms-win-core-synch-l1-1-0.dll', 'DeleteCriticalSection');
 
 /*
 ###################################################################################################
@@ -241,21 +240,13 @@ InitializeSRWLock.OnCallBack = function (Emu, API, ret) {
 
 InitializeSRWLock.install('ntdll.dll', 'InitializeSRWLock');
 InitializeSRWLock.install('kernel32.dll', 'InitializeSRWLock');
-InitializeSRWLock.install('api-ms-win-core-synch-l1-1-0.dll', 'InitializeSRWLock');
 
 /*
 ###################################################################################################
 ###################################################################################################
 */
 
-var RtlEnterCriticalSection = new ApiHook();
-RtlEnterCriticalSection.OnCallBack = function (Emu, API, ret) {
 
-	// just let the library handle it :D 
-	return true;
-};
-
-RtlEnterCriticalSection.install('ntdll.dll', 'RtlEnterCriticalSection');
 /*
 ###################################################################################################
 ###################################################################################################
@@ -457,7 +448,9 @@ ntdll_Gen.install('ntdll.dll', 'RtlSetUnhandledExceptionFilter');
 ntdll_Gen.install('ntdll.dll', 'RtlCreateTagHeap');
 
 ntdll_Gen.install('ntdll.dll', 'InterlockedPushListSList');
-ntdll_Gen.install('api-ms-win-core-interlocked-l1-1-0.dll', 'InterlockedPushListSList');
+
+ntdll_Gen.install('ntdll.dll', 'RtlGetNtGlobalFlags');
+
 
 
 

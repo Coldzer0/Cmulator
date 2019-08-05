@@ -32,12 +32,6 @@ interface
 
 {$IFDEF FPC}
   {$MODE DELPHI}
-  {$IFDEF ZYDIS_DYNAMIC_LINK}
-    {$LinkLib zydis}
-  {$ELSE}
-  {$Link ../libraries/osx/libZydis.a}
-  {$ENDIF}
-
 {$ENDIF}
 
 {* ============================================================================================== *}
@@ -1137,35 +1131,25 @@ const
   {$ENDIF}
   ZYDIS_SYMBOL_PREFIX = '';
 {$ELSE}
-  {$IFDEF CPUX86}
 const
-  ZYDIS_SYMBOL_PREFIX = '_';
-    {$L '../Bin32/Decoder.obj'}
-    {$L '../Bin32/DecoderData.obj'}
-    {$L '../Bin32/Formatter.obj'}
-    {$L '../Bin32/MetaInfo.obj'}
-    {$L '../Bin32/Mnemonic.obj'}
-    {$L '../Bin32/Register.obj'}
-    {$L '../Bin32/SharedData.obj'}
-    {$L '../Bin32/String.obj'}
-    {$L '../Bin32/Utils.obj'}
-    {$L '../Bin32/Zydis.obj'}
+ZYDIS_SYMBOL_PREFIX = '';
+  {$IFDEF Darwin}
+    {$IFDEF CPUX64}
+      {$LinkLib './Build/libraries/osx/libZydis.a'}
+    {$ENDIF}
   {$ENDIF}
-  {$IFDEF CPUX64}
-const
-  ZYDIS_SYMBOL_PREFIX = '';
+  {$IFDEF linux}
+    {$IFDEF CPUX64}
+      {$LinkLib './Build/libraries/linux/libZydis.a'}
+    {$ENDIF}
+  {$ENDIF}
   {$IFDEF Windows}
-    {$L '../Bin64/Decoder.obj'}
-    {$L '../Bin64/DecoderData.obj'}
-    {$L '../Bin64/Formatter.obj'}
-    {$L '../Bin64/MetaInfo.obj'}
-    {$L '../Bin64/Mnemonic.obj'}
-    {$L '../Bin64/Register.obj'}
-    {$L '../Bin64/SharedData.obj'}
-    {$L '../Bin64/String.obj'}
-    {$L '../Bin64/Utils.obj'}
-    {$L '../Bin64/Zydis.obj'}
-  {$ENDIF}
+    {$IFDEF CPUX86}
+      {$LinkLib './Build/libraries/win32/libZydis32.a'}
+    {$ENDIF}
+    {$IFDEF CPUX64}
+      {$LinkLib './Build/libraries/win64/libZydis64.a'}
+    {$ENDIF}
   {$ENDIF}
 {$ENDIF}
 
@@ -1452,6 +1436,12 @@ procedure ZydisGetAccessedFlags; external
   name ZYDIS_SYMBOL_PREFIX + 'ZydisGetAccessedFlags';
 
 {$IFDEF CPUX86}
+
+function c_udivdi3(num,den:uint64):uint64; cdecl; {$ifdef darwin}[public, alias: '___udivdi3'];{$else}[public, alias: '___udivdi3'];{$endif}
+begin
+ result:=num div den;
+end;
+
 procedure __allmul; assembler;
 asm
   mov         eax, dword ptr[esp+8]

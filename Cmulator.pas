@@ -73,16 +73,26 @@ var
   JSON : ISuperObject;
   data : string;
 begin
-  conf := TStringList.Create;
+
   if FileExists('./config.json') then
   begin
+    conf := TStringList.Create;
     conf.LoadFromFile('./config.json');
     data := conf.Text;
+    conf.free;
+
     JSON := SO(UnicodeString(data));
 
     win32 := JSON.S['system.win32'];
     win64 := JSON.S['system.win64'];
     JSAPI := JSON.S['JS.main'];
+    ApiSetSchemaPath := JSON.S['system.Apiset'];
+
+    if not FileExists(ApiSetSchemaPath) then
+    begin
+      Writeln('ApiSetSchema JSON file not found - Check the config file !');
+      halt;
+    end;
 
     if not FileExists(JSAPI) then
     begin

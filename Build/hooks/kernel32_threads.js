@@ -190,8 +190,7 @@ FlsAlloc.OnCallBack = function (Emu, API, ret) {
 };
 
 FlsAlloc.install('kernel32.dll', 'FlsAlloc');
-FlsAlloc.install('api-ms-win-core-fibers-l1-1-0.dll', 'FlsAlloc');
-FlsAlloc.install('api-ms-win-core-fibers-l1-1-1.dll', 'FlsAlloc');
+FlsAlloc.install('kernelbase.dll', 'FlsAlloc');
 
 /*
 ###################################################################################################
@@ -225,7 +224,6 @@ FlsFree.OnCallBack = function (Emu, API, ret) {
 };
 
 FlsFree.install('kernel32.dll', 'FlsFree');
-FlsFree.install('api-ms-win-core-fibers-l1-1-0.dll', 'FlsFree');
 
 /*
 ###################################################################################################
@@ -264,8 +262,7 @@ FlsSetValue.OnCallBack = function (Emu, API, ret) {
 };
 
 FlsSetValue.install('kernel32.dll', 'FlsSetValue');
-FlsSetValue.install('api-ms-win-core-fibers-l1-1-0.dll', 'FlsSetValue');
-FlsSetValue.install('api-ms-win-core-fibers-l1-1-1.dll', 'FlsSetValue');
+FlsSetValue.install('kernelbase.dll', 'FlsSetValue');
 
 /*
 ###################################################################################################
@@ -300,7 +297,6 @@ FlsGetValue.OnCallBack = function (Emu, API, ret) {
 };
 
 FlsGetValue.install('kernel32.dll', 'FlsGetValue');
-FlsGetValue.install('api-ms-win-core-fibers-l1-1-0.dll', 'FlsGetValue');
 
 /*
 ###################################################################################################
@@ -322,7 +318,7 @@ GetLastError.OnCallBack = function (Emu, API, ret) {
 };
 
 GetLastError.install('kernel32.dll', 'GetLastError');
-GetLastError.install('api-ms-win-core-errorhandling-l1-1-0.dll', 'GetLastError');
+
 /*
 ###################################################################################################
 ###################################################################################################
@@ -344,7 +340,6 @@ SetLastError.OnCallBack = function (Emu, API, ret) {
 };
 
 SetLastError.install('kernel32.dll', 'SetLastError');
-SetLastError.install('api-ms-win-core-errorhandling-l1-1-0.dll', 'SetLastError');
 
 /*
 ###################################################################################################
@@ -371,7 +366,6 @@ EnterCriticalSection.OnCallBack = function (Emu, API, ret) {
 };
 
 EnterCriticalSection.install('kernel32.dll', 'EnterCriticalSection');
-EnterCriticalSection.install('api-ms-win-core-synch-l1-1-0.dll', 'EnterCriticalSection');
 
 /*
 ###################################################################################################
@@ -405,7 +399,6 @@ InterlockedIncrement.OnCallBack = function (Emu, API, ret) {
 };
 
 InterlockedIncrement.install('kernel32.dll', 'InterlockedIncrement');
-InterlockedIncrement.install('api-ms-win-core-interlocked-l1-1-0.dll', 'InterlockedIncrement');
 
 
 /*
@@ -441,8 +434,6 @@ InterlockedDecrement.OnCallBack = function (Emu, API, ret) {
 };
 
 InterlockedDecrement.install('kernel32.dll', 'InterlockedDecrement');
-InterlockedDecrement.install('api-ms-win-core-interlocked-l1-1-0.dll', 'InterlockedDecrement');
-
 
 /*
 ###################################################################################################
@@ -469,7 +460,8 @@ LeaveCriticalSection.OnCallBack = function (Emu, API, ret) {
 };
 
 LeaveCriticalSection.install('kernel32.dll', 'LeaveCriticalSection');
-
+LeaveCriticalSection.install('ntdll.dll', 'RtlLeaveCriticalSection');
+LeaveCriticalSection.install('ntdll.dll', 'RtlEnterCriticalSection');
 
 /*
 ###################################################################################################
@@ -492,7 +484,7 @@ GetCurrentThreadId.OnCallBack = function (Emu, API, ret) {
 	return true; 
 };
 GetCurrentThreadId.install('kernel32.dll', 'GetCurrentThreadId');
-GetCurrentThreadId.install('api-ms-win-core-processthreads-l1-1-0.dll', 'GetCurrentThreadId');
+GetCurrentThreadId.install('kernelbase.dll', 'GetCurrentThreadId');
 
 /*
 ###################################################################################################
@@ -515,7 +507,7 @@ GetCurrentProcess.OnCallBack = function (Emu, API, ret) {
 };
 
 GetCurrentProcess.install('kernel32.dll', 'GetCurrentProcess');
-GetCurrentProcess.install('api-ms-win-core-processthreads-l1-1-0.dll', 'GetCurrentProcess');
+GetCurrentProcess.install('kernelbase.dll', 'GetCurrentProcess');
 
 /*
 ###################################################################################################
@@ -538,7 +530,8 @@ GetCurrentProcessId.OnCallBack = function (Emu, API, ret) {
 };
 
 GetCurrentProcessId.install('kernel32.dll', 'GetCurrentProcessId');
-GetCurrentProcessId.install('api-ms-win-core-processthreads-l1-1-0.dll', 'GetCurrentProcessId');
+GetCurrentProcessId.install('kernelbase.dll', 'GetCurrentProcessId');
+
 /*
 ###################################################################################################
 ###################################################################################################
