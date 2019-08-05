@@ -624,7 +624,7 @@ this work inspired by :
 Used OpenSource Projects :
 - [Besen Engine](https://github.com/bero1985/besen)
 - [Unicorn Engine](https://github.com/unicorn-engine/unicorn)
-- [Capstone Engine](https://github.com/aquynh/capstone)
+- [Zydis Engine](https://github.com/zyantific/zydis)
 - [PE Parser](https://github.com/oranke/pe-image-for-Lazarus) 
 - [Pse PE Parse](https://github.com/stievie/pesp) 
 - [generics collections](https://github.com/maciej-izak/generics.collections)
