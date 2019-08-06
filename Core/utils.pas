@@ -4,7 +4,7 @@ unit Utils;
 interface
 
 uses
-  Classes, SysUtils,strutils,LazFileUtils,
+  Classes, SysUtils,strutils,LazFileUtils,RegExpr,
   Unicorn_dyn, UnicornConst, X86Const,
   {$i besenunits.inc},
   Zydis,
@@ -55,6 +55,7 @@ function isprint(const AC: AnsiChar): boolean;
 
 function GetFullPath(name : string) : UnicodeString;
 function GetDllFromApiSet(name : string): UnicodeString;
+function SplitReg(Str : string) : string;
 
 const
   UC_PAGE_SIZE  = $1000;
@@ -92,14 +93,30 @@ begin
      Result := IncludeTrailingPathDelimiter(win32) + UnicodeString(LowerCase(Trim(name)));
 end;
 
+function SplitReg(Str : string) : string;
+var
+  re : TRegExpr;
+begin
+  Result := '';
+  re := TRegExpr.Create('^.*-l\d');
+  if re.Exec(Str) then
+  begin
+    //Writeln('name : ',Str);
+    //Writeln('[0]  : ',re.Match[0].Remove(Length(re.Match[0])-3,3),#10);
+    Result := re.Match[0].Remove(Length(re.Match[0])-3,3);
+  end;
+  re.Free;
+end;
+
 function GetDllFromApiSet(name : string): UnicodeString;
 var
   API : TApiRed;
   Dll : string;
   Path : UnicodeString;
 begin
-  Result := name;
-  Dll := ExtractFileNameWithoutExt(ExtractFileName(name));
+  Result := UnicodeString(SplitReg(name));
+  Dll := ExtractFileNameWithoutExt(ExtractFileName(SplitReg(name)));
+
   if Emulator.ApiSetSchema.ContainsKey(Dll) then
   begin
     Emulator.ApiSetSchema.TryGetValue(Dll,API);

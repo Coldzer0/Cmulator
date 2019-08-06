@@ -1,5 +1,8 @@
 # Cmulator - Scriptable x86 RE Sandbox Emulator (v0.2 Beta)
 
+
+[![Join the chat at https://gitter.im/x86_emulator/community](https://badges.gitter.im/x86_emulator/cmulator.svg)](https://gitter.im/x86_emulator/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 <h3> <b>Call for LOGO</b> , if you good at design give it a try and Create Logo for Cmulator <br>
 your name will appear in <b>Acknowledgements</b>
 

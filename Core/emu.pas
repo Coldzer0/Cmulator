@@ -1352,8 +1352,8 @@ begin
        Redirect.first := string(item.S['red.F']);
        Redirect.last  := string(item.S['red.L']);
        Redirect.count := item.I['count'];
-       name := string(item.S['name']);
-       ApiSetSchema.AddOrSetValue(LowerCase(name),Redirect);
+       name := SplitReg(string(LowerCase(item.S['name'])));
+       ApiSetSchema.AddOrSetValue(name,Redirect);
      end;
 
      for item in APIS['WIN10_APIS'] do
@@ -1362,8 +1362,8 @@ begin
        Redirect.last  := string(item.S['red[1]']);
        Redirect.count := item.I['count'];
        Redirect.&alias := string(item.S['alias']);
-       name := string(item.S['name']);
-       ApiSetSchema.AddOrSetValue(LowerCase(name),Redirect);
+       name := SplitReg(string(LowerCase(item.S['name'])));
+       ApiSetSchema.AddOrSetValue(name,Redirect);
      end;
   finally
     JSON.Free;
