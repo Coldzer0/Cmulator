@@ -27,6 +27,7 @@
  **********************************************************************}
 
 {$WARNINGS OFF}
+{$HINTS OFF}
 type
   TEmptyRecord = record // special record for Dictionary TValue (Dictionary as Set)
   end;

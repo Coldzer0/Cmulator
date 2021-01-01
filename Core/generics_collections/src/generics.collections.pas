@@ -37,7 +37,8 @@ unit Generics.Collections;
 {$HINTS OFF}
 {$OVERFLOWCHECKS OFF}
 {$RANGECHECKS OFF}
-
+{$WARN 6058 off : Call to subroutine "$1" marked as inline is not inlined}
+{$WARN 3018 off : Constructor should be public}
 interface
 
 uses
