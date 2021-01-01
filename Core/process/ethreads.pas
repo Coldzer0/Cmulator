@@ -1,6 +1,9 @@
-unit EThreads; // i really don't remember why i name this unit to Start with E .
+{$IFDEF FPC}
+    {$MODE Delphi}
+    {$SMARTLINK ON}
+{$ENDIF}
 
-{$mode delphi}
+unit EThreads; // i really don't remember why i name this unit to Start with E .
 
 interface
 
@@ -108,7 +111,6 @@ var
   FPath_len, Path_len, name_len : Cardinal;
   _flink : QWORD;
   path : string;
-  tmp : Pointer;
 begin
   path := Main_Path + lib.Dllname;
 

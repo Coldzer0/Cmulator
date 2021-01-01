@@ -1,313 +1,316 @@
 unit JSEmuObj;
 
 {$mode delphi}
-
+{$WARN 5024 off : Parameter "$1" not used}
 interface
 
 uses
-  Classes, SysUtils,strutils,
-  {$I besenunits.inc},
-  FnHook,Emu,Utils,
+  Classes, SysUtils,
+  FnHook,Utils,
   Unicorn_dyn, UnicornConst,
-  LazFileUtils,LazUTF8,PE_Loader;
-
-type
-
-{ TEmuObj }
-
-TEmuObj = class
-    { Register Stuff }
-    procedure ReadReg(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure SetReg(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
+  PE_Loader,
+  quickjs;
 
 
-    { String things :P }
-    procedure ReadStringA(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure ReadStringW(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
+  { Register Stuff }
+  function ReadReg(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function SetReg(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 
-    procedure WriteStringA(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure WriteStringW(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
 
-    { Emulator Modules }
-    procedure LoadLibrary(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure GetModuleName(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure GetModuleHandle(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure GetProcAddress(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
+  { String things :P }
+  function ReadStringA(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function ReadStringW(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 
-    { Memory things :D }
-    procedure WriteByte(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure WriteWord(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure WriteDword(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure WriteQword(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure WriteMem(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
+  function WriteStringA(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function WriteStringW(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 
-    procedure ReadByte(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure ReadWord(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure ReadDword(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure ReadQword(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure ReadMem(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
+  { Emulator Modules }
+  function LoadLibrary(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function GetModuleName(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function GetModuleHandle(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function GetProcAddress(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 
-    { Stack }
-    procedure push(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure pop(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
+  { Memory things :D }
+  function WriteByte(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function WriteWord(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function WriteDword(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function WriteQword(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function WriteMem(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 
-    { Control Flow }
-    procedure Stop(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure LastError(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
+  function ReadByte(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function ReadWord(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function ReadDword(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function ReadQword(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function ReadMem(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 
-    { Misc }
-    procedure HexDump(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
-    procedure StackDump(const ThisArgument:TBESENValue;Arguments:PPBESENValues;CountArguments:integer;var ResultValue:TBESENValue);
+  { Stack }
+  function push(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function pop(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 
-end;
+  { Control Flow }
+  function Stop(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function LastError(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+
+  { Misc }
+  function HexDump(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+  function StackDump(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 
 implementation
    uses
-     Globals,math,JSPlugins_BEngine;
+     Globals, Emu;
 
 { TEmuObj }
 
-procedure TEmuObj.ReadReg(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function ReadReg(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Value : UInt64;
-  REG : UInt32;
-  JSValue : PBESENValue;
+  Value : Int64 = 0;
+  REG : UInt32 = 0;
 begin
-  if CountArguments <> 1 then
-    raise EBESENError.Create('GetReg take 1 arg - Ex: GetReg(REG_RAX)');
+  if argc <> 1 then
+  begin
+    JS_ThrowInternalError(ctx,'GetReg take 1 arg - Ex: GetReg(REG_RAX)',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSValue := Arguments^[0];
-  case JSValue^.ValueType of
-    bvtNUMBER:
-      begin
-       REG := TBESEN(JS).ToInt(JSValue^)
-      end;
+  if JS_IsNumber(argv[0]) then
+    JS_ToUint32(ctx,@REG,argv[0])
   else
-      raise EBESENError.Create('GetReg take 1 arg - Ex: GetReg(REG_RAX) - And Should Be Number');
-      exit;
+  begin
+    JS_ThrowInternalError(ctx,'GetReg take 1 arg - Ex: GetReg(REG_RAX) - And Should Be Number',[]);
+    Exit(JS_EXCEPTION);
   end;
   Value := 0;
   Emulator.err := uc_reg_read(Emulator.uc,REG,@Value);
-  ResultValue := BESENNumberValue(Value);
+  Result := JS_NewInt64(ctx,Value);
 end;
 
-procedure TEmuObj.SetReg(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function SetReg(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  value : UInt64;
-  REG : UInt32;
-  JSvalue : PBESENValue;
-
-  procedure Error();
-  begin
-    raise EBESENError.Create('SetReg take 2 arg - Ex: GetReg(REG_RAX,0x401000) - And Both Should Be Number');
-  end;
+  value : Int64 = 0;
+  REG : UInt32 = 0;
 begin
-  if CountArguments <> 2 then
-    raise EBESENError.Create('SetReg take 2 arg - Ex: SetReg(REG_RAX,0x401000)');
 
-  JSvalue := Arguments^[0];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    REG := TBESEN(JS).ToInt(JSvalue^)
-  else
-    Error();
+  if argc <> 2 then
+    JS_ThrowInternalError(ctx,'SetReg take 2 arg - Ex: SetReg(REG_RAX,0x401000)',[]);
 
-  JSvalue := Arguments^[1];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    value := TBESEN(JS).ToInt(JSvalue^)
+  if JS_IsNumber(argv[0]) then
+    JS_ToUint32(ctx,@REG,argv[0])
   else
-    Error();
+  begin
+    JS_ThrowInternalError(ctx,'SetReg arg 1 Error - Ex: SetReg(REG_RAX,0x401000) - Both Should Be Number',[]);
+    Exit(JS_EXCEPTION);
+  end;
+
+  if JS_IsNumber(argv[1]) then
+     JS_ToInt64(ctx,@value,argv[1])
+  else
+  begin
+    JS_ThrowInternalError(ctx,'SetReg arg 2 Error - Ex: SetReg(REG_RAX,0x401000) - Both Should Be Number',[]);
+    Exit(JS_EXCEPTION);
+  end;
+
+  //if (REG in [UC_X86_REG_EIP,UC_X86_REG_RIP]) and (value < Emulator.Img.ImageBase + Emulator.img.SizeOfImage) then
+  //begin
+  //  Emulator.Entry := value;
+  //  WriteLn('Entry Changed to : ', hexStr(Emulator.Entry,8));
+  //end;
 
   Emulator.err := uc_reg_write(Emulator.uc,REG,@value);
-  ResultValue := BESENBooleanValue(Emulator.err = UC_ERR_OK);
+  Result := JS_NewBool(ctx,Emulator.err = UC_ERR_OK);
 end;
 
-procedure TEmuObj.ReadStringA(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function ReadStringA(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Addr : UInt64;
-  len  : UInt32;
-  JSvalue : PBESENValue;
-  procedure Error();
+  Addr : Int64 = 0;
+  len  : UInt32 = 0;
+  procedure Error(ErrNum : Integer);
   begin
-    raise EBESENError.Create('ReadStringA take 1 or 2 arg - Ex: ReadStringA(Addr) or ReadStringA(Addr,len)');
+    JS_ThrowInternalError(
+    ctx,
+    '[%d] ReadStringA take 1 or 2 arg - Ex: ReadStringA(Addr) or ReadStringA(Addr,len)',
+    [ErrNum]);
   end;
 begin
-  len := 0; Addr := 0;
-
-  if CountArguments < 1 then
-    raise EBESENError.Create('ReadStringA take 1 or 2 arg - Ex: ReadStringA(Addr) or ReadStringA(Addr,len)');
-
-
-  JSvalue := Arguments^[0];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    Addr := TBESEN(JS).ToInt(JSvalue^)
-  else
-    Error();
-
-  if CountArguments = 2 then
+  if argc < 1 then
   begin
-    JSvalue := Arguments^[1];
-    if  JSvalue^.ValueType = bvtNUMBER then
-      len := TBESEN(JS).ToInt(JSvalue^)
+    Error(0);
+    Exit(JS_EXCEPTION);
+  end;
+
+  if JS_IsNumber(argv[0]) then
+    JS_ToInt64(ctx,@Addr,argv[0])
+  else
+  begin
+    Error(1); Exit(JS_EXCEPTION);
+  end;
+
+  if argc = 2 then
+  begin
+    if JS_IsNumber(argv[1]) then
+      JS_ToUint32(ctx,@len,argv[1])
     else
-      Error();
+    begin
+      Error(2); Exit(JS_EXCEPTION);
+    end;
   end;
-
-  ResultValue := BESENStringValue(BESENUTF8ToUTF16(Utils.ReadStringA(Addr,len)));
+  // TODO: Check if the Unicode strings works.
+  Result := JS_NewString(ctx,PChar(Utils.ReadStringA(Addr,len)));
 end;
 
-procedure TEmuObj.ReadStringW(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function ReadStringW(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Addr : UInt64;
-  len  : UInt32;
-  JSvalue : PBESENValue;
-  procedure Error();
+  Addr : Int64 = 0;
+  len  : UInt32 = 0;
+  procedure Error(ErrNum : Integer);
   begin
-    raise EBESENError.Create('ReadStringW take 1 or 2 arg - Ex: ReadStringW(Addr) or ReadStringW(Addr,len)');
+    JS_ThrowInternalError(ctx,'[%d] ReadStringW take 1 or 2 arg - Ex: ReadStringW(Addr) or ReadStringW(Addr,len)',[ErrNum]);
   end;
 begin
-  len := 0; Addr := 0;
 
-  if CountArguments < 1 then
-    raise EBESENError.Create('ReadStringW take 1 or 2 arg - Ex: ReadStringW(Addr) or ReadStringW(Addr,len)');
-
-
-  JSvalue := Arguments^[0];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    Addr := TBESEN(JS).ToInt(JSvalue^)
-  else
-    Error();
-
-  if CountArguments = 2 then
+  if argc < 1 then
   begin
-    JSvalue := Arguments^[1];
-    if  JSvalue^.ValueType = bvtNUMBER then
-      len := TBESEN(JS).ToInt(JSvalue^)
+    JS_ThrowInternalError(ctx,'[0] ReadStringW take 1 or 2 arg - Ex: ReadStringW(Addr) or ReadStringW(Addr,len)',[]);
+    Exit(JS_EXCEPTION);
+  end;
+
+
+  if JS_IsNumber(argv[0]) then
+    JS_ToInt64(ctx,@Addr,argv[0])
+  else
+  begin
+    Error(1); Exit(JS_EXCEPTION);
+  end;
+
+  if argc >= 2 then
+  begin
+    if JS_IsNumber(argv[1]) then
+      JS_ToUint32(ctx,@len,argv[1])
     else
-      Error();
+    begin
+      Error(2); Exit(JS_EXCEPTION);
+    end;
   end;
 
-  ResultValue := BESENStringValue(BESENUTF8ToUTF16(Utils.ReadStringW(Addr,len)));
+  Result := JS_NewString(ctx,PChar(Utils.ReadStringW(Addr,len)));
 end;
 
-procedure TEmuObj.WriteStringA(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function WriteStringA(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Str : AnsiString;
-  Addr : UInt64;
-  JSvalue : PBESENValue;
+  Str : PChar;
+  Addr : Int64 = 0;
 begin
-  if CountArguments <> 2 then
-    raise EBESENError.Create('WriteStringA take 2 - Ex: WriteStringA(Addr, "plaplapla")');
+  if argc <> 2 then
+  begin
+    JS_ThrowInternalError(ctx,'WriteStringA take 2 - Ex: WriteStringA(Addr, "plaplapla")',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSvalue := Arguments^[0];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    Addr := TBESEN(JS).ToInt(JSvalue^)
+  if JS_IsNumber(argv[0]) then
+    JS_ToInt64(ctx,@Addr,argv[0])
   else
-    raise EBESENError.Create('WriteStringA "First" Arg must be Number');
+  begin
+    JS_ThrowInternalError(ctx,'WriteStringA "First" Arg must be Number',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSvalue := Arguments^[1];
-  if  JSvalue^.ValueType = bvtSTRING then
-    Str := JSStringToStr(JSvalue^)
+  if JS_IsString(argv[1]) then
+    Str := JS_ToCString(ctx,argv[1])
   else
-    raise EBESENError.Create('WriteStringA "Second" Arg must be String');
+  begin
+    JS_ThrowInternalError(ctx,'WriteStringA "Second" Arg must be String',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  ResultValue := BESENNumberValue(Utils.WriteStringA(Addr,Str));
+  Result := JS_NewInt32(ctx,Utils.WriteStringA(Addr,Str));
+  JS_FreeCString(ctx,Str);
 end;
 
-procedure TEmuObj.WriteStringW(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function WriteStringW(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Str : AnsiString;
-  Addr : UInt64;
-  JSvalue : PBESENValue;
+  Str : PChar;
+  Addr : Int64 = 0;
 begin
-  if CountArguments <> 2 then
-    raise EBESENError.Create('WriteStringW take 2 - Ex: WriteStringW(Addr, "plaplapla")');
+  if argc <> 2 then
+  begin
+    JS_ThrowInternalError(ctx,'WriteStringW take 2 - Ex: WriteStringW(Addr, "Cmulator")',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSvalue := Arguments^[0];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    Addr := TBESEN(JS).ToInt(JSvalue^)
+  if JS_IsNumber(argv[0]) then
+    JS_ToInt64(ctx,@Addr,argv[0])
   else
-    raise EBESENError.Create('WriteStringA "First" Arg must be Number');
+  begin
+    JS_ThrowInternalError(ctx,'WriteStringA "First" Arg must be Number',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSvalue := Arguments^[1];
-  if  JSvalue^.ValueType = bvtSTRING then
-    Str := JSStringToStr(JSvalue^)
+  if JS_IsString(argv[1]) then
+    Str := JS_ToCString(ctx,argv[1])
   else
-    raise EBESENError.Create('WriteStringW "Second" Arg must be String');
-
-  ResultValue := BESENNumberValue(Utils.WriteStringW(Addr,Str));
+  begin
+    JS_ThrowInternalError(ctx,'WriteStringW "Second" Arg must be String',[]);
+    Exit(JS_EXCEPTION);
+  end;
+  Result := JS_NewInt32(ctx,Utils.WriteStringW(Addr,Str));
+  JS_FreeCString(ctx,Str);
 end;
 
-procedure TEmuObj.LoadLibrary(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function LoadLibrary(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Libname, RedirectLib : AnsiString;
-  JSvalue : PBESENValue;
+  Libname, RedirectLib : PChar;
   Lib : TNewDll;
 begin
-  ResultValue := BESENNumberValue(0); // Default value = 0 ..
-  if CountArguments = 1 then
+  Result := JS_NewInt64(ctx,0); // Default value = 0 ..
+  if argc = 1 then
   begin
-    JSvalue := Arguments^[0];
-    if  JSvalue^.ValueType = bvtSTRING then
-      Libname := Trim(JSStringToStr(JSvalue^))
+    if JS_IsString(argv[0]) then
+      Libname := JS_ToCString(ctx,argv[0])
     else
-      raise EBESENError.Create('LoadLibrary Arg must be String ! - Ex: LoadLibrary(''kernel32.dll'')');
-
-
-    RedirectLib := String(GetDllFromApiSet(Libname));
+    begin
+      JS_ThrowInternalError(ctx,'LoadLibrary Arg must be String ! - Ex: LoadLibrary(''kernel32.dll'')',[]);
+      Exit(JS_EXCEPTION);
+    end;
 
     // this was here for debugging :P .
     //if AnsiContainsStr(Libname,'ms-') then
-       //Writeln('Resolve lib : ',Libname ,' --> to : ',ExtractFileName(RedirectLib));
+       //Writeln('Resolve lib : ',Libname ,' --> to : ',RedirectLib);
 
-    Libname := Trim(ExtractFileNameWithoutExt(LowerCase(ExtractFileName(RedirectLib))) + '.dll');
+    RedirectLib := PChar(Trim(ExtractFileNameWithoutExt(LowerCase(ExtractFileName(Libname))) + '.dll'));
 
-    if Emulator.Libs.TryGetValue(Libname,Lib) then
+    // TODO: Need more test.
+    if Emulator.Libs.TryGetValue(RedirectLib,Lib) then
     begin
-      ResultValue := BESENNumberValue(Lib.BaseAddress);
+      Result := JS_NewInt64(ctx,Lib.BaseAddress);
     end
     else
     begin
-      if PE_Loader.load_sys_dll(Emulator.uc,Libname) then
-        if Emulator.Libs.TryGetValue(Libname,Lib) then
-           ResultValue := BESENNumberValue(Lib.BaseAddress);
+      if PE_Loader.load_sys_dll(Emulator.uc,RedirectLib) then
+        if Emulator.Libs.TryGetValue(RedirectLib,Lib) then
+           Result := JS_NewInt64(ctx,Lib.BaseAddress);
     end;
+    JS_FreeCString(ctx,Libname);
   end;
 end;
 
-procedure TEmuObj.GetModuleName(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function GetModuleName(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Handle : UInt64;
-  JSvalue : PBESENValue;
+  Handle : Int64 = 0;
   Lib : TNewDll;
 begin
-  ResultValue := BESENNumberValue(0); // Default value = 0 ..
-  if CountArguments = 1 then
+  Result := JS_NewInt64(ctx,0); // Default value = 0 ..
+  if argc = 1 then
   begin
-    JSvalue := Arguments^[0];
-    if  JSvalue^.ValueType = bvtNUMBER then
-      Handle := TBESEN(JS).ToInt(JSvalue^)
+    if JS_IsNumber(argv[0]) then
+      JS_Toint64(ctx,@Handle,argv[0])
     else
-      raise EBESENError.Create('GetModuleName Arg must be Number !!!');
+    begin
+      JS_ThrowInternalError(ctx,'GetModuleName Arg must be Number !!!',[]);
+      Exit(JS_EXCEPTION);
+    end;
 
     if (Handle = 0) or (Handle = Emulator.Img.ImageBase) then
     begin
-      ResultValue := BESENStringValue(BESENUTF8ToUTF16(ExtractFileName(Emulator.Img.FileName))); // Current PE ...
+      Result := JS_NewString(ctx,PChar(ExtractFileName(Emulator.Img.FileName))); // Current PE ...
       exit;
     end;
 
@@ -315,402 +318,406 @@ begin
     begin
       if lib.BaseAddress = Handle then
       begin
-           ResultValue := BESENStringValue(BESENUTF8ToUTF16(ExtractFileName(lib.Dllname)));
+           Result := JS_NewString(ctx,PChar(ExtractFileName(lib.Dllname)));
            break;
       end;
     end;
   end
   else
-   ResultValue := BESENStringValue(BESENUTF8ToUTF16(ExtractFileName(Emulator.Img.FileName))); // Current PE ...
+   Result := JS_NewString(ctx,PChar(ExtractFileName(Emulator.Img.FileName))); // Current PE ...
 end;
 
-procedure TEmuObj.GetModuleHandle(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function GetModuleHandle(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Libname : AnsiString;
-  JSvalue : PBESENValue;
+  Libname : PChar;
 begin
-  ResultValue := BESENNumberValue(0); // Default value = 0 ..
-  if CountArguments = 1 then
+  Result := JS_NewInt64(ctx,0); // Default value = 0 ..
+  if argc = 1 then
   begin
-    JSvalue := Arguments^[0];
-    if  JSvalue^.ValueType = bvtSTRING then
-      Libname := Trim(JSStringToStr(JSvalue^))
+    if JS_IsString(argv[0]) then
+      Libname := JS_ToCString(ctx,argv[0])
     else
-      raise EBESENError.Create('GetModuleHandle Arg must be String !!!');
-
-    ResultValue := BESENNumberValue(Utils.GetModulehandle(Libname));
+    begin
+      JS_ThrowInternalError(ctx,'GetModuleHandle Arg must be String !!!',[]);
+      Exit(JS_EXCEPTION);
+    end;
+    Result := JS_NewInt64(ctx,Utils.CmuGetModulehandle(Libname));
   end
   else
-   ResultValue := BESENNumberValue(Emulator.Img.ImageBase); // Current PE ...
+   Result := JS_NewInt64(ctx,Emulator.Img.ImageBase); // Current PE ...
 end;
 
-procedure TEmuObj.GetProcAddress(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function GetProcAddress(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Handle : UInt64;
-  FnName : AnsiString;
-  JSvalue : PBESENValue;
+  Handle : Int64 = 0;
+  FnName : PChar;
 begin
-  ResultValue := BESENNumberValue(0); // Default value = 0 ..
-  if CountArguments <> 2 then
-    raise EBESENError.Create('GetProcAddr takes 2 Args Ex: Emu.GetProcAddr(handle,''MessageBoxA'')');
+  Result := JS_NewInt64(ctx,0); // Default value = 0 ..
+  if argc <> 2 then
+  begin
+    JS_ThrowInternalError(ctx,'GetProcAddr takes 2 Args Ex: Emu.GetProcAddr(user32_handle,''MessageBoxA'')',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSvalue := Arguments^[0];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    Handle := TBESEN(JS).ToInt(JSvalue^)
+  if JS_IsNumber(argv[0]) then
+    JS_Toint64(ctx,@Handle,argv[0])
   else
-    raise EBESENError.Create('GetProcAddr First Arg must be Number !!!');
+  begin
+    JS_ThrowInternalError(ctx,'GetProcAddr First Arg must be Number !!!',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSvalue := Arguments^[1];
-  if  JSvalue^.ValueType = bvtSTRING then
-    FnName := Trim(JSStringToStr(JSvalue^))
+  if JS_IsString(argv[1]) then
+    FnName := JS_ToCString(ctx,argv[1])
   else
-    raise EBESENError.Create('GetProcAddr Second Arg must be String !!!');
-
+  begin
+    JS_ThrowInternalError(ctx,'GetProcAddr Second Arg must be String !!!',[]);
+    Exit(JS_EXCEPTION);
+  end;
   // TODO: Add Search by Ordinal ..
-
-  ResultValue := BESENNumberValue(GetProcAddr(Handle,FnName));
+  Result := JS_NewInt64(ctx,GetProcAddr(Handle,FnName));
+  JS_FreeCString(ctx,FnName);
 end;
 
-procedure TEmuObj.WriteByte(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function WriteByte(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Addr : UInt64;
-  value : byte;
-  JSvalue : PBESENValue;
+  Addr : Int64 = 0;
+  value : uint32 = 0;
 begin
-  if CountArguments <> 2 then
-    raise EBESENError.Create('WriteByte take 2 - Ex: WriteByte(Addr, 0x100)');
+  if argc <> 2 then
+  begin
+    JS_ThrowInternalError(ctx,'WriteByte take 2 - Ex: WriteByte(Addr, 0x100)',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSvalue := Arguments^[0];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    Addr := TBESEN(JS).ToInt(JSvalue^)
+  if JS_IsNumber(argv[0]) then
+    JS_Toint64(ctx,@Addr,argv[0])
   else
-    raise EBESENError.Create('WriteByte "First" Arg must be Number');
+  begin
+    JS_ThrowInternalError(ctx,'WriteByte "First" Arg must be Number',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSvalue := Arguments^[1];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    value := byte(TBESEN(JS).ToInt(JSvalue^))
+  if JS_IsNumber(argv[1]) then
+    JS_ToUint32(ctx,@value,argv[1])
   else
-    raise EBESENError.Create('WriteByte "Second" Arg must be Number');
+  begin
+    JS_ThrowInternalError(ctx,'WriteByte "Second" Arg must be Number',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  ResultValue := BESENBooleanValue(Utils.WriteByte(Addr,value));
+  Result := JS_NewBool(ctx,Utils.WriteByte(Addr,byte(value)));
 end;
 
-procedure TEmuObj.WriteWord(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function WriteWord(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Addr : UInt64;
-  value : Word;
-  JSvalue : PBESENValue;
+  Addr : Int64 = 0;
+  value : Word = 0;
 begin
-  if CountArguments <> 2 then
-    raise EBESENError.Create('WriteWord take 2 - Ex: WriteWord(Addr, 0x100)');
+  if argc <> 2 then
+  begin
+    JS_ThrowInternalError(ctx,'WriteWord take 2 - Ex: WriteWord(Addr, 0x100)',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSvalue := Arguments^[0];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    Addr := TBESEN(JS).ToInt(JSvalue^)
+  if JS_IsNumber(argv[0]) then
+    JS_Toint64(ctx,@Addr,argv[0])
   else
-    raise EBESENError.Create('WriteWord "First" Arg must be Number');
+  begin
+    JS_ThrowInternalError(ctx,'WriteWord "First" Arg must be Number',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSvalue := Arguments^[1];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    value := Word(TBESEN(JS).ToInt(JSvalue^))
+  if JS_IsNumber(argv[1]) then
+    JS_Toint32(ctx,@value,argv[1])
   else
-    raise EBESENError.Create('WriteWord "Second" Arg must be Number');
+  begin
+    JS_ThrowInternalError(ctx,'WriteWord "Second" Arg must be Number',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  ResultValue := BESENBooleanValue(Utils.WriteWord(Addr,value));
+  Result := JS_NewBool(ctx,Utils.WriteWord(Addr,value));
 end;
 
-procedure TEmuObj.WriteDword(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function WriteDword(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Addr : UInt64;
-  value : Dword;
-  JSvalue : PBESENValue;
+  Addr : Int64 = 0;
+  value : Dword = 0;
 begin
-  if CountArguments <> 2 then
-    raise EBESENError.Create('WriteDword take 2 - Ex: WriteDWord(Addr, 0x100)');
+  if argc <> 2 then
+  begin
+    JS_ThrowInternalError(ctx,'WriteDword take 2 - Ex: WriteDWord(Addr, 0x100)',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSvalue := Arguments^[0];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    Addr := TBESEN(JS).ToInt(JSvalue^)
+  if JS_IsNumber(argv[0]) then
+    JS_Toint64(ctx,@Addr,argv[0])
   else
-    raise EBESENError.Create('WriteDword "First" Arg must be Number');
+  begin
+    JS_ThrowInternalError(ctx,'WriteDword "First" Arg must be Number',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSvalue := Arguments^[1];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    value := Dword(TBESEN(JS).ToInt(JSvalue^))
+  if JS_IsNumber(argv[1]) then
+    JS_Toint32(ctx,@value,argv[1])
   else
-    raise EBESENError.Create('WriteDword "Second" Arg must be Number');
+  begin
+    JS_ThrowInternalError(ctx,'WriteDword "Second" Arg must be Number',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  ResultValue := BESENBooleanValue(Utils.WriteDword(Addr,value));
+  Result := JS_NewBool(ctx,Utils.WriteDword(Addr,value));
 end;
 
-procedure TEmuObj.WriteQword(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function WriteQword(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Addr : UInt64;
-  value : Qword;
-  JSvalue : PBESENValue;
+  Addr : Int64 = 0;
+  value : Qword = 0;
 begin
-  if CountArguments <> 2 then
-    raise EBESENError.Create('WriteQword take 2 - Ex: WriteQword(Addr, 0x100)');
+  if argc <> 2 then
+  begin
+    JS_ThrowInternalError(ctx,'WriteQword take 2 - Ex: WriteQword(Addr, 0x100)',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSvalue := Arguments^[0];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    Addr := TBESEN(JS).ToInt(JSvalue^)
+  if JS_IsNumber(argv[0]) then
+    JS_Toint64(ctx,@Addr,argv[0])
   else
-    raise EBESENError.Create('WriteQword "First" Arg must be Number');
+  begin
+    JS_ThrowInternalError(ctx,'WriteQword "First" Arg must be Number',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSvalue := Arguments^[1];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    value := Qword(TBESEN(JS).ToInt(JSvalue^))
+  if JS_IsNumber(argv[1]) then
+    JS_Toint64(ctx,@value,argv[1])
   else
-    raise EBESENError.Create('WriteQword "Second" Arg must be Number');
+  begin
+    JS_ThrowInternalError(ctx,'WriteQword "Second" Arg must be Number',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  ResultValue := BESENBooleanValue(Utils.WriteQword(Addr,value));
+  Result := JS_NewBool(ctx,Utils.WriteQword(Addr,value));
 end;
 
-procedure TEmuObj.WriteMem(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function WriteMem(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Addr : UInt64;
-  val : Byte;
-  JSvalue : PBESENValue;
-  Element : TBESENValue;
+  Addr : Int64 = 0;
+  val : Byte = 0;
+  Element,length : JSValue;
   i,len : Integer;
 begin
-  ResultValue := BESENBooleanValue(False);
-  if CountArguments <> 2 then
-    raise EBESENError.Create('WriteMem take 2 - Ex: WriteMem(Addr, [0xC0,0xDE])');
-
-  JSvalue := Arguments^[0];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    Addr := TBESEN(JS).ToInt(JSvalue^)
-  else
-    raise EBESENError.Create('WriteMem "First" Arg must be Number');
-
-  JSvalue := Arguments^[1];
-  if  JSvalue^.ValueType = bvtOBJECT then
+  Result := JS_NewInt32(ctx,0);
+  if argc <> 2 then
   begin
-    if TBESENObject(JSvalue.Obj) is TBESENObjectArray then
+    JS_ThrowInternalError(ctx,'WriteMem take 2 - Ex: WriteMem(Addr, [0xC0,0xDE])',[]);
+    Exit(JS_EXCEPTION);
+  end;
+
+  if JS_IsNumber(argv[0]) then
+    JS_Toint64(ctx,@Addr,argv[0])
+  else
+  begin
+    JS_ThrowInternalError(ctx,'WriteMem "First" Arg must be Number',[]);
+    Exit(JS_EXCEPTION);
+  end;
+  // TODO: Debug this :D .
+  if JS_IsObject(argv[1]) then
+  begin
+    if JS_IsArray(ctx,argv[1]) > 0 then
     begin
-      Initialize(Element);
-      len := TBESENObjectArray(JSvalue.Obj).Len;
+      length := JS_GetPropertyStr(ctx,argv[1],'length');
+      JS_ToInt32(ctx,@len,length);
       for i := 0 to Pred(len) do
       begin
-        TBESENObjectArray(JSvalue.Obj).GetArrayIndex(i,Element);
-         if Element.ValueType = bvtNUMBER then
-         begin
-           val := TBESEN(JS).ToInt(Element);
-           if Utils.WriteByte(Addr+i,val) then
-             ResultValue := BESENBooleanValue(True)
-           else
-             Break;
-         end;
+        Element := JS_GetPropertyUint32(ctx,argv[1],i);
+        if JS_IsNumber(Element) then
+        begin
+         JS_ToUint32(ctx,@val,Element);
+         if Utils.WriteByte(Addr+i,val) then
+           Result := JS_NewInt32(ctx,i)
+         else
+           Break;
+        end;
       end;
-    end;
+    end
+    else
+      Exit(JS_EXCEPTION);
   end
   else
-    raise EBESENError.Create('WriteMem "Second" Arg must be Array');
-end;
-
-procedure TEmuObj.ReadByte(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
-var
-  Addr : UInt64;
-  JSValue : PBESENValue;
-begin
-  if CountArguments <> 1 then
-    raise EBESENError.Create('ReadByte take 1 arg - Ex: ReadByte(Addr : Number)');
-
-  JSValue := Arguments^[0];
-  case JSValue^.ValueType of
-    bvtNUMBER:
-      begin
-       Addr := TBESEN(JS).ToInt(JSValue^)
-      end;
-  else
-      raise EBESENError.Create('ReadByte take 1 arg - Ex: ReadByte(Addr : Number) - And Should Be Number');
-      exit;
+  begin
+    JS_ThrowInternalError(ctx,'WriteMem "Second" Arg must be Array',[]);
+    Exit(JS_EXCEPTION);
   end;
-  ResultValue := BESENNumberValue(Utils.ReadByte(Addr));
 end;
 
-procedure TEmuObj.ReadWord(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function ReadByte(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Addr : UInt64;
-  JSValue : PBESENValue;
+  Addr : Int64 = 0;
 begin
-  if CountArguments <> 1 then
-    raise EBESENError.Create('ReadWord take 1 arg - Ex: ReadWord(Addr : Number)');
-
-  JSValue := Arguments^[0];
-  case JSValue^.ValueType of
-    bvtNUMBER:
-      begin
-       Addr := TBESEN(JS).ToInt(JSValue^)
-      end;
-  else
-      raise EBESENError.Create('ReadWord take 1 arg - Ex: ReadWord(Addr : Number) - And Should Be Number');
-      exit;
+  if argc <> 1 then
+  begin
+    JS_ThrowInternalError(ctx,'ReadByte take 1 arg - Ex: ReadByte(Addr : Number)',[]);
+    Exit(JS_EXCEPTION);
   end;
-  ResultValue := BESENNumberValue(Utils.ReadWord(Addr));
+
+  if JS_IsNumber(argv[0]) then
+    JS_Toint64(ctx,@Addr,argv[0])
+  else
+  begin
+      JS_ThrowInternalError(ctx,'ReadByte take 1 arg - Ex: ReadByte(Addr : Number) - And Should Be Number',[]);
+      Exit(JS_EXCEPTION);
+  end;
+  Result := JS_NewInt32(ctx,Utils.ReadByte(Addr));
 end;
 
-procedure TEmuObj.ReadDword(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function ReadWord(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Addr : UInt64;
-  JSValue : PBESENValue;
+  Addr : Int64 = 0;
 begin
-  if CountArguments <> 1 then
-    raise EBESENError.Create('ReadDword take 1 arg - Ex: ReadDword(Addr : Number)');
-
-  JSValue := Arguments^[0];
-  case JSValue^.ValueType of
-    bvtNUMBER:
-      begin
-       Addr := TBESEN(JS).ToInt(JSValue^)
-      end;
-  else
-      raise EBESENError.Create('ReadDword take 1 arg - Ex: ReadDword(Addr : Number) - And Should Be Number');
-      exit;
+  if argc <> 1 then
+  begin
+    JS_ThrowInternalError(ctx,'ReadWord take 1 arg - Ex: ReadWord(Addr : Number)',[]);
+    Exit(JS_EXCEPTION);
   end;
-  ResultValue := BESENNumberValue(Utils.ReadDword(Addr));
+
+  if JS_IsNumber(argv[0]) then
+    JS_Toint64(ctx,@Addr,argv[0])
+  else
+  begin
+      JS_ThrowInternalError(ctx,'ReadWord take 1 arg - Ex: ReadWord(Addr : Number) - And Should Be Number',[]);
+      Exit(JS_EXCEPTION);
+  end;
+  Result := JS_NewInt32(ctx,Utils.ReadWord(Addr));
 end;
 
-procedure TEmuObj.ReadQword(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function ReadDword(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Addr : UInt64;
-  JSValue : PBESENValue;
+  Addr : Int64 = 0;
 begin
-  if CountArguments <> 1 then
-    raise EBESENError.Create('ReadQword take 1 arg - Ex: ReadQword(Addr : Number)');
-
-  JSValue := Arguments^[0];
-  case JSValue^.ValueType of
-    bvtNUMBER:
-      begin
-       Addr := TBESEN(JS).ToInt(JSValue^)
-      end;
-  else
-      raise EBESENError.Create('ReadQword take 1 arg - Ex: ReadQword(Addr : Number) - And Should Be Number');
-      exit;
+  if argc <> 1 then
+  begin
+    JS_ThrowInternalError(ctx,'ReadDword take 1 arg - Ex: ReadDword(Addr : Number)',[]);
+    Exit(JS_EXCEPTION);
   end;
-  ResultValue := BESENNumberValue(Utils.ReadQword(Addr));
+
+  if JS_IsNumber(argv[0]) then
+    JS_Toint64(ctx,@Addr,argv[0])
+  else
+  begin
+      JS_ThrowInternalError(ctx,'ReadDword take 1 arg - Ex: ReadDword(Addr : Number) - And Should Be Number',[]);
+      Exit(JS_EXCEPTION);
+  end;
+  Result := JS_NewInt32(ctx,Utils.ReadDword(Addr));
 end;
 
-procedure TEmuObj.ReadMem(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function ReadQword(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
+var
+  Addr : Int64 = 0;
+begin
+  if argc <> 1 then
+  begin
+    JS_ThrowInternalError(ctx,'ReadQword take 1 arg - Ex: ReadQword(Addr : Number)',[]);
+    Exit(JS_EXCEPTION);
+  end;
+
+  if JS_IsNumber(argv[0]) then
+    JS_Toint64(ctx,@Addr,argv[0])
+  else
+  begin
+      JS_ThrowInternalError(ctx,'ReadQword take 1 arg - Ex: ReadQword(Addr : Number) - And Should Be Number',[]);
+      Exit(JS_EXCEPTION);
+  end;
+  Result := JS_NewInt64(ctx,Utils.ReadQword(Addr));
+end;
+
+function ReadMem(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 begin
   // TODO .
+  JS_ThrowInternalError(ctx,'In my TODO list :D',[]);
+  //JS_NewArrayBuffer(ctx,data,len,free_func_callback,moredata,is_shared);
+  Result := JS_EXCEPTION;
 end;
 
-procedure TEmuObj.push(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function push(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Value : UInt64;
-  JSValue : PBESENValue;
+  Value : Int64 = 0;
 //=========================
  procedure RaiseError();
  begin
-   raise EBESENError.Create('push take 1 arg - Ex: push(value : Number)');
+   JS_ThrowInternalError(ctx,'push take 1 arg - Ex: push(value : Number)',[]);
  end;
 begin
-  ResultValue := BESENBooleanValue(False);
-  if CountArguments <> 1 then
-     RaiseError();
-
-  JSValue := Arguments^[0];
-  case JSValue^.ValueType of
-    bvtNUMBER:
-      begin
-       Value := TBESEN(JS).ToInt(JSValue^)
-      end;
-  else
-      RaiseError();
-      exit;
+  Result := JS_FALSE;
+  if argc <> 1 then
+  begin
+     RaiseError(); Exit(JS_EXCEPTION);
   end;
-  ResultValue := BESENBooleanValue(utils.push(Value));
+
+  if JS_IsNumber(argv[0]) then
+    JS_Toint64(ctx,@Value,argv[0])
+  else
+  begin
+      RaiseError(); Exit(JS_EXCEPTION);
+  end;
+  Result := JS_NewBool(ctx,utils.push(Value));
 end;
 
-procedure TEmuObj.pop(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function pop(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 begin
-  ResultValue := BESENNumberValue(utils.pop());
+  Result := JS_NewInt64(ctx,utils.pop());
 end;
 
-procedure TEmuObj.Stop(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function Stop(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 begin
   Emulator.Stop := true;
+  Result := JS_TRUE;
 end;
 
-procedure TEmuObj.LastError(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
-var
-  Error : AnsiString;
+function LastError(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 begin
-  Error := uc_strerror(Emulator.err);
-  ResultValue := BESENStringValue(BESENUTF8ToUTF16(Error));
+  Result := JS_NewString(ctx,uc_strerror(Emulator.err));
 end;
 
-procedure TEmuObj.HexDump(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function HexDump(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Addr : UInt64;
-  len  : UInt32;
-  cols : byte;
-  tmp  : Pointer;
-  JSvalue : PBESENValue;
+  Addr : Int64 = 0;
+  len  : UInt32 = 0;
+  cols : byte = 0;
+  tmp  : Pointer = nil;
 begin
-  if CountArguments < 2 then
-    raise EBESENError.Create('HexDump take at least two args - Ex: HexDump(Addr, len, nCols)');
-
-  JSvalue := Arguments^[0];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    Addr := TBESEN(JS).ToInt(JSvalue^)
-  else
-    raise EBESENError.Create('HexDump "First" Arg must be Number - Ex: HexDump(Addr, len, nCols)');
-
-  JSvalue := Arguments^[1];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    len := TBESEN(JS).ToInt(JSvalue^)
-  else
-    raise EBESENError.Create('HexDump "Second" Arg must be Number - Ex: HexDump(Addr, len, nCols)');
-
-  cols := 16; // the default .
-  if CountArguments = 3 then
+  if argc < 2 then
   begin
-    JSvalue := Arguments^[2];
-    if  JSvalue^.ValueType = bvtNUMBER then
-      cols := TBESEN(JS).ToInt(JSvalue^)
-    else
-      raise EBESENError.Create('HexDump "Third" Arg must be Number - Ex: HexDump(Addr, len, nCols)');
+    JS_ThrowInternalError(ctx,'HexDump take at least two args - Ex: HexDump(Addr, len, nCols)',[]);
+    Exit(JS_EXCEPTION);
   end;
 
+  if JS_IsNumber(argv[0]) then
+    JS_Toint64(ctx,@Addr,argv[0])
+  else
+  begin
+    JS_ThrowInternalError(ctx,'HexDump "First" Arg must be Number - Ex: HexDump(Addr, len, nCols)',[]);
+    Exit(JS_EXCEPTION);
+  end;
+
+  if JS_IsNumber(argv[1]) then
+    JS_ToUint32(ctx,@len,argv[1])
+  else
+  begin
+    JS_ThrowInternalError(ctx,'HexDump "Second" Arg must be Number - Ex: HexDump(Addr, len, nCols)',[]);
+    Exit(JS_EXCEPTION);
+  end;
+
+  cols := 16; // the default .
+  if argc = 3 then
+  begin
+   if JS_IsNumber(argv[2]) then
+     JS_ToUint32(ctx,@cols,argv[2])
+    else
+    begin
+      JS_ThrowInternalError(ctx,'HexDump "Third" Arg must be Number - Ex: HexDump(Addr, len, nCols)',[]);
+      Exit(JS_EXCEPTION);
+    end;
+  end;
 
   if len > 0 then
   begin
@@ -723,40 +730,46 @@ begin
     end;
   end
   else
-    raise EBESENError.Create('Dump! - 0 Really! :D');
-
-  ResultValue.ValueType := bvtUNDEFINED;
+  begin
+    JS_ThrowInternalError(ctx,'Really 🧐  a len of "0" to Dump, Try Harder !',[]);
+    Exit(JS_EXCEPTION);
+  end;
+  Result := JS_UNDEFINED;
 end;
 
-procedure TEmuObj.StackDump(const ThisArgument : TBESENValue;
-  Arguments : PPBESENValues; CountArguments : integer;
-  var ResultValue : TBESENValue);
+function StackDump(ctx : JSContext; this_val : JSValueConst; argc : Integer; argv : PJSValueConstArr): JSValue; cdecl;
 var
-  Addr : UInt64;
-  len  : UInt32;
-  JSvalue : PBESENValue;
+  Addr : Int64 = 0;
+  len  : UInt32 = 0;
 begin
-  if CountArguments < 2 then
-    raise EBESENError.Create('StackDump takes two args - Ex: StackDump(Addr, len)');
+  if argc < 2 then
+  begin
+    JS_ThrowInternalError(ctx,'StackDump takes two args - Ex: StackDump(Addr, len)',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSvalue := Arguments^[0];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    Addr := TBESEN(JS).ToInt(JSvalue^)
+  if JS_IsNumber(argv[0]) then
+    JS_Toint64(ctx,@Addr,argv[0])
   else
-    raise EBESENError.Create('StackDump "First" Arg must be Number - Ex: StackDump(Addr, len)');
+  begin
+    JS_ThrowInternalError(ctx,'StackDump "First" Arg must be Number - Ex: StackDump(Addr, len)',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
-  JSvalue := Arguments^[1];
-  if  JSvalue^.ValueType = bvtNUMBER then
-    len := TBESEN(JS).ToInt(JSvalue^)
+  if JS_IsNumber(argv[1]) then
+    JS_ToUint32(ctx,@len,argv[1])
   else
-    raise EBESENError.Create('StackDump "Second" Arg must be Number - Ex: StackDump(Addr, len)');
+  begin
+    JS_ThrowInternalError(ctx,'StackDump "Second" Arg must be Number - Ex: StackDump(Addr, len)',[]);
+    Exit(JS_EXCEPTION);
+  end;
 
   if len > 0 then
      Utils.DumpStack(addr,len)
   else
-     Writeln('Len is 0 so not StackDump :D !');
+     Writeln('Really a len of "0" for StackDump !');
 
-  ResultValue.ValueType := bvtUNDEFINED;
+  Result := JS_UNDEFINED;
 end;
 
 end.

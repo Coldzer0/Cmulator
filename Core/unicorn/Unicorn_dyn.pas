@@ -17,9 +17,9 @@ unit Unicorn_dyn;
 interface
 
 uses
-  {$IFDEF FPC}dynlibs,Crt{$ELSE}
+  {$IFDEF FPC}dynlibs{$ELSE}
     {$ifdef mswindows}
-       windows,sysutils
+       ,windows,sysutils
     {$ENDIF}
   {$ENDIF};
 
@@ -550,6 +550,9 @@ The callback will be run when the hook event is hit.
   function UC_MAKE_VERSION(major,minor : Cardinal): Cardinal;
 
 implementation
+ uses
+   Utils;
+
 var
   uc_open_ref : function (arch : uc_arch; mode : uc_mode; var uc : uc_engine) : uc_err; cdecl = nil;
   uc_context_restore_ref : function (uc : uc_engine; context : uc_context) : uc_err; cdecl = nil;

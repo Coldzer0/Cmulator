@@ -5,8 +5,7 @@ unit Globals;
 interface
 
 uses
-  Classes, SysUtils, Emu,JSPlugins_BEngine,
-  {$I besenunits.inc},Unicorn_dyn;
+  Classes, SysUtils, Emu, quickjs, Unicorn_dyn;
 
 
 {
@@ -17,7 +16,9 @@ MINOR version when you add functionality in a backwards-compatible manner, and
 PATCH version when you make backwards-compatible bug fixes.
 }
 const
-  CM_VERSION = 'v0.2.1';
+  CM_VERSION = 'v0.3.0';
+
+  microseconds : UInt64 = 1000000;
 
 var
   VerboseExcp  : Boolean = False;
@@ -28,20 +29,21 @@ var
   ShowASM      : Boolean = False;
   InterActive  : Boolean = False; // TODO .
 //============================================================================//
-  Steps_limit  : UInt64 = 2000000; // 0 = unlimited .
+  Steps_limit  : UInt64 = 4000000; // 0 = unlimited .
   Steps        : UInt64 = 0;
 
   Emulator   : TEmu;
 
-  JS : TBESENInstance;
-  JSEmu : TBESENObject;
+  rt  : JSRuntime = nil;
+  ctx : JSContext = nil;
+  JSEmu : JSValue;
 
   //HOOK_BASE,HOOK_INDEX,HOOK_LIB,HOOK_Fn : UInt64;
 
   win32 : UnicodeString = '';
   win64 : UnicodeString = '';
 
-  JSAPI : UnicodeString = '';
+  JSAPI : AnsiString = '';
   ApiSetSchemaPath : UnicodeString = '';
 
 implementation

@@ -1,7 +1,9 @@
+{$IFDEF FPC}
+    {$MODE Delphi}
+    {$SMARTLINK ON}
+    {$PackRecords C}
+{$ENDIF}
 unit TEP_PEB;
-
-{$mode delphi}
-{$PackRecords C}
 
 interface
 
@@ -10,7 +12,7 @@ uses
 
 type
   ULONG = Cardinal;
-  LONG = Longint;
+  LONG  = Longint;
   UCHAR = byte;
 
 type
@@ -626,10 +628,8 @@ type
 
     TCrossTebFlags : bitpacked record  // both x32 - x64 .
       case boolean of
-        false : (
-               SpareCrossTebBits : TSpareCrossTebBits;
-        );
-        true : (CrossTebFlags : WORD) ;
+        false : (SpareCrossTebBits : TSpareCrossTebBits);
+        true : (CrossTebFlags : WORD);
     end;
 
 
@@ -938,4 +938,3 @@ type
 implementation
 
 end.
-

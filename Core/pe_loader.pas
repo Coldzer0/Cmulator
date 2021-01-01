@@ -6,7 +6,6 @@ interface
 
 uses
   Classes, SysUtils, strutils,
-  LazFileUtils, LazUTF8, Crt,
   Unicorn_dyn, UnicornConst, X86Const,
   Generics.Collections,Generics.Defaults,
   Utils, FnHook,xxHash,EThreads,TEP_PEB,math,
@@ -57,22 +56,37 @@ begin
     uc_reg_write(uc, UC_X86_REG_ESP, @r_esp); //
 
     //void __stdcall TlsCallback(PVOID DllHandle, DWORD Reason, PVOID Reserved) .
-    Utils.push(0);         // lpReserved
-    Utils.push(1);         // fdwReason
-    Utils.push(img.ImageBase);  // HINST  .
-    Utils.push($DEADC0DE); // our custom return address so we can stop the execution .
+    Utils.push(0);             // lpReserved
+    Utils.push(1);             // fdwReason
+    Utils.push(img.ImageBase); // HINST  .
+    // our custom return address so we can stop the execution .
+    Utils.push($DEADC0DE);
 
-    if VerboseEx then
+    if not Emulator.RunOnDll then
     begin
       Writeln();
-      TextColor(LightMagenta);
+      TextColor(LightBlue);
       Writeln(Format('Call TlsCallBack %s Entry : %x',
-            [ExtractFileName(img.FileName),img.ImageBase + img.EntryPointRVA]));
+            [ExtractFileName(img.FileName),img.ImageBase + CallBack]));
       NormVideo;
     end;
     Emulator.ResetEFLAGS();
-    uc_emu_start(uc,img.ImageBase + CallBack,0,0,0);
+    if Emulator.SaveCPUState then
+    begin
+      uc_emu_start(uc,img.ImageBase + CallBack,0,UInt64(microseconds * 10),0);
+      if Emulator.RestoreCPUState  = false then
+      begin
+        writeln('[X] Error While Restoring CPU State');
+        Halt;
+      end;
+    end
+    else
+    begin
+      writeln('[X] Error While Saving CPU State');
+      Halt;
+    end;
   end;
+  writeln();
   TextColor(LightBlue);
   Writeln('[√] Init TLS Callbacks done');
   NormVideo;
@@ -108,7 +122,22 @@ begin
        Emulator.RunOnDll := True;
 
     Emulator.ResetEFLAGS();
-    Err := uc_emu_start(uc,lib.EntryPoint,lib.ImageSize,0,0);
+
+    if Emulator.SaveCPUState then
+    begin
+      Err := uc_emu_start(uc,lib.EntryPoint,lib.ImageSize,UInt64(microseconds * 10),0);
+      if Emulator.RestoreCPUState  = false then
+      begin
+        writeln('[X] Error While Restoring CPU State');
+        Halt;
+      end;
+    end
+    else
+    begin
+      writeln('[X] Error While Saving CPU State');
+      Halt;
+    end;
+
     if VerboseExx then
       Writeln('[InitDll] Error --> ',uc_strerror(err));
     Emulator.RunOnDll := False;
@@ -219,16 +248,24 @@ begin
         end;
       end;
 
-      if VerboseExx then
+      if FuncAddr = 0 then
       begin
+        if CmuGetModulehandle(LibName) = 0 then
+          load_sys_dll(uc,LibName);
+        FuncAddr := Utils.GetProcAddr(CmuGetModulehandle(LibName),fn.Name);
         if FuncAddr = 0 then
         begin
           TextColor(LightRed);
-          Writeln(format('Lib name : %s --> %s -> %s',[Lib.Name,LibName,fn.Name]));
-          Writeln('Please Report this MSG in Github issues');
+          Writeln('[x] FixDllImports');
+          Writeln(format('[x] Lib name : %s --> %s -> %s:%d',[Lib.Name,LibName,fn.Name,fn.Ordinal]));
+          Writeln('[+] Please Report this MSG in Github issues');
           NormVideo;
+          halt;
         end;
+      end;
 
+      if VerboseExx then
+      begin
         write('   '); // indent
         writeln(format('%s : Real rva: 0x%-8x - New : 0x%-8x',
          [IfThen(fn.Name <> '',fn.Name,('#'+IntToStr(Fn.Ordinal))),rva,FuncAddr]));
@@ -253,7 +290,7 @@ var
   img: TPEImage;
   sym: TPEExportSym;
   Reloc: TReloc;
-  VAddr, DLL_BASE, Delta, pDst , ptmp : UInt64;
+  VAddr, DLL_BASE, Delta, pDst , ptmp : Int64;
   Path : UnicodeString;
   FLibrary : TMemoryStream;
   err : uc_err;
@@ -270,17 +307,30 @@ begin
   Result := false;
   Delta := 0;
 
+  if dll = '' then
+  begin
+    TextColor(LightRed);
+    Writeln('Dll name is empty, Just open an issue with empty dll name :D');
+    NormVideo;
+    halt;
+  end;
   // ApiSetMap redirect.
   if AnsiContainsStr(Dll,'ms-') then
   begin
    Dll := String(GetDllFromApiSet(Dll));
   end;
 
-  Dll := LowerCase(ExtractFileNameWithoutExt(ExtractFileName(Dll)) + '.dll');
+  Dll := Trim(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(Dll)) + '.dll'));
   // if already loaded then return.
-  if Emulator.Libs.ContainsKey(Trim(Dll)) then
-    Exit(True);
+  if dll = 'gdi32.dll' then
+    WriteLn('Load Lib : ',Dll);
 
+  if Emulator.Libs.ContainsKey(Trim(Dll)) then
+  begin
+    WriteLn('Already loaded : ',Dll);
+    Exit(True);
+  end;
+  //Writeln('loading dll : ',Dll, '  ..........');
   Path := GetFullPath(Dll);
   if FileExists(Path) then
   begin
@@ -365,6 +415,7 @@ begin
               ptmp += Delta;
               err := uc_mem_write_(uc,pDst,@ptmp,img.ImageWordSize);
             end;
+            // { TODO -oColdzer0 : add IMAGE_REL_BASED_HIGH & IMAGE_REL_BASED_LOW }
           else
             raise Exception.CreateFmt('Unsupported relocation type: %d', [Reloc.&Type]);
           end;
@@ -412,33 +463,49 @@ begin
             FName := IntToStr(sym.Ordinal);
           end;
 
-          // (ByAddr.ContainsKey(VAddr) cuz some function has same Addr like .
           {
-           VA: $7DDF9909; RVA: $99909; ord: $171; name: "GetBinaryType";
-           VA: $7DDF9909; RVA: $99909; ord: $172; name: "GetBinaryTypeA";
-           ---------------------------------------------------------------------
-           VA: $7DD60000; RVA: $0; ord: $2; name: "InterlockedPushListSList"; fwd: "NTDLL.RtlInterlockedPushListSList"
-           this one is Forwarded .
+          Example of Forwarded API.
+          VA: $7DD60000; RVA: $0; ord: $2; name: "InterlockedPushListSList"; fwd: "NTDLL.RtlInterlockedPushListSList"
           }
-
           FWName := '';
           if sym.Forwarder then
           begin
             // API is Forwarded ..
             FWName := sym.ForwarderName;
             sym.GetForwarderLibAndFuncName(FWLib,FWAPI);
-            if AnsiContainsStr(FWLib,'ms-') then
+            if (LowerCase(ExtractFileNameWithoutExt(LibName)) <> LowerCase(ExtractFileNameWithoutExt(FWLib)))
+            and (FWLib <> '') and (FWAPI <> '') then
             begin
-              FWLib := LowerCase(ExtractFileNameWithoutExt(ExtractFileName(string(GetDllFromApiSet(FWLib))))) + '.dll';
-              if not FileExistsUTF8(string(GetFullPath(FWLib))) then
+              //Writeln(Format('Load API Forwarder for : %s',[LibName]));
+              if AnsiContainsStr(FWLib,'ms-') then
               begin
-                Writeln(Format('Library "%s" not found ! [3]',[GetFullPath(FWLib)]));
-                halt;
+                FWLib := LowerCase(ExtractFileNameWithoutExt(ExtractFileName(string(GetDllFromApiSet(FWLib))))) + '.dll';
+                if not FileExists(string(GetFullPath(FWLib))) then
+                begin
+                  Writeln(Format('Library "%s" not found ! [3]',[GetFullPath(FWLib)]));
+                  halt;
+                end;
               end;
+              //if LowerCase(ExtractFileNameWithoutExt(LibName)) = LowerCase(ExtractFileNameWithoutExt(FWLib)) then
+                //Writeln(Format('Library %s to "%s" - %s -> %s',[LowerCase(ExtractFileNameWithoutExt(LibName))
+                //,LowerCase(ExtractFileNameWithoutExt(FWLib)),sym.Name,FWAPI]));
+
+              if not Emulator.Libs.ContainsKey(Trim(Dll)) then
+              begin
+                Emulator.Libs.Add(LibName,TNewDll.Create((DLL_BASE + img.EntryPointRVA),LibName,DLL_BASE,img.SizeOfImage,ByAddr,ByOrdinal,ByName));
+              end;
+
+              if CmuGetModulehandle(FWLib) = 0 then
+                load_sys_dll(uc,FWLib);
+              VAddr := Utils.GetProcAddr(CmuGetModulehandle(FWLib),FWAPI);
             end;
-            VAddr := Utils.GetProcAddr(GetModulehandle(FWLib),FWAPI);
           end;
 
+          // Check if Contains the "VAddr" cuz some function has same Addr like .
+          {
+           VA: $7DDF9909; RVA: $99909; ord: $171; name: "GetBinaryType";
+           VA: $7DDF9909; RVA: $99909; ord: $172; name: "GetBinaryTypeA";
+          }
           if not ByAddr.ContainsKey(VAddr) then
           ByAddr.Add(VAddr,TLibFunction.Create(LibName,sym.Name,VAddr,sym.Ordinal,nil,
                                           sym.Forwarder,IsOrdinal,FWName));
@@ -460,7 +527,10 @@ begin
           //end;
         end;
       end;
-      Emulator.Libs.Add(LibName,TNewDll.Create((DLL_BASE + img.EntryPointRVA),LibName,DLL_BASE,img.SizeOfImage,ByAddr,ByOrdinal,ByName));
+      if not Emulator.Libs.ContainsKey(Trim(Dll)) then
+      begin
+        Emulator.Libs.Add(LibName,TNewDll.Create((DLL_BASE + img.EntryPointRVA),LibName,DLL_BASE,img.SizeOfImage,ByAddr,ByOrdinal,ByName));
+      end;
     finally
       inc(Emulator.DLL_NEXT_LOAD, img.SizeOfImage);
       //inc(HOOK_INDEX);
@@ -696,7 +766,10 @@ begin
     Dll := ExtractFileNameWithoutExt(ExtractFileName(imp.DllName)) + '.dll';
     if AnsiContainsStr(Dll,'ms-') then
     begin
-      Dll := LowerCase(ExtractFileNameWithoutExt(ExtractFileName(string(GetDllFromApiSet(Dll))))) + '.dll';
+      Dll := LowerCase(
+                ExtractFileNameWithoutExt(
+                  ExtractFileName(
+                    string(GetDllFromApiSet(Dll))))) + '.dll';
     end;
 
     Writeln(Format('[+] Fix IAT for : %-40s --> %s ',[imp.DllName, Dll]));
@@ -705,7 +778,7 @@ begin
 
     if not FileExists(Path) then
     begin
-      Writeln('"',Dll,'" not found ! [4]');
+      Writeln('"', Dll,' - ', Path,'" not found ! [4]');
       halt(-1);
     end;
     // If library not loaded then load it .
@@ -751,6 +824,7 @@ begin
         Writeln(Format('    %s',[IfThen(api.Name <> '',api.Name,('#'+IntToStr(api.Hint)))]));
         write('      '); // indent
         writeln(format('Real rva: 0x%-8x - New : 0x%-8x',[rva - Img.ImageBase,FuncAddr]));
+        Writeln();
       end;
 
       err := uc_mem_write_(uc,rva,@FuncAddr,Img.ImageWordSize);
@@ -762,8 +836,8 @@ begin
       end;
       inc(rva, Img.ImageWordSize);
     end;
-    Writeln();
   end;
+  Writeln();
   Writeln('[---------------------------------------]');
   Writeln();
   FreeAndNil(PseFile);
@@ -868,4 +942,3 @@ initialization
   //HOOK_INDEX := 0;
 
 end.
-

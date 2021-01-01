@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <ProjectSession>
-    <Version Value="11"/>
+    <Version Value="12"/>
     <BuildModes Active="OSX_Release"/>
-    <Units Count="30">
+    <Units Count="37">
       <Unit0>
         <Filename Value="Cmulator.pas"/>
         <IsPartOfProject Value="True"/>
-        <TopLine Value="205"/>
-        <CursorPos X="20" Y="214"/>
+        <TopLine Value="193"/>
+        <CursorPos X="3" Y="208"/>
         <UsageCount Value="201"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
@@ -17,9 +17,10 @@
         <Filename Value="Core/emu.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Emu"/>
-        <EditorIndex Value="3"/>
-        <TopLine Value="137"/>
-        <CursorPos X="24" Y="153"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="10"/>
+        <TopLine Value="841"/>
+        <CursorPos X="13" Y="844"/>
         <UsageCount Value="210"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
@@ -28,19 +29,20 @@
         <Filename Value="Core/segments.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Segments"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="100"/>
-        <CursorPos X="4" Y="104"/>
+        <EditorIndex Value="12"/>
+        <TopLine Value="174"/>
+        <CursorPos X="12" Y="174"/>
         <UsageCount Value="203"/>
+        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit2>
       <Unit3>
         <Filename Value="Core/utils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Utils"/>
-        <EditorIndex Value="4"/>
-        <TopLine Value="114"/>
-        <CursorPos X="43" Y="117"/>
+        <EditorIndex Value="11"/>
+        <TopLine Value="357"/>
+        <CursorPos X="38" Y="363"/>
         <UsageCount Value="224"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
@@ -65,9 +67,9 @@
         <Filename Value="Core/pe_loader.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="PE_Loader"/>
-        <EditorIndex Value="7"/>
-        <TopLine Value="416"/>
-        <CursorPos X="99" Y="432"/>
+        <EditorIndex Value="5"/>
+        <TopLine Value="120"/>
+        <CursorPos X="33" Y="126"/>
         <UsageCount Value="210"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
@@ -76,9 +78,9 @@
         <Filename Value="Core/fnhook.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="FnHook"/>
-        <EditorIndex Value="10"/>
-        <TopLine Value="18"/>
-        <CursorPos X="22" Y="28"/>
+        <EditorIndex Value="9"/>
+        <TopLine Value="17"/>
+        <CursorPos X="13" Y="21"/>
         <UsageCount Value="201"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
@@ -87,24 +89,14 @@
         <Filename Value="Core/globals.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Globals"/>
-        <EditorIndex Value="1"/>
-        <TopLine Value="5"/>
-        <CursorPos X="23" Y="20"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="10"/>
+        <CursorPos X="24" Y="21"/>
         <UsageCount Value="212"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit8>
       <Unit9>
-        <Filename Value="Core/jsplugins_bengine.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="JSPlugins_BEngine"/>
-        <EditorIndex Value="8"/>
-        <TopLine Value="57"/>
-        <UsageCount Value="200"/>
-        <Loaded Value="True"/>
-        <DefaultSyntaxHighlighter Value="Delphi"/>
-      </Unit9>
-      <Unit10>
         <Filename Value="Core/memmanager.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="MemManager"/>
@@ -112,36 +104,39 @@
         <CursorPos X="50" Y="11"/>
         <UsageCount Value="201"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
-      </Unit10>
-      <Unit11>
+      </Unit9>
+      <Unit10>
         <Filename Value="Core/tep_peb.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="TEP_PEB"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="80"/>
-        <CursorPos X="3" Y="91"/>
+        <EditorIndex Value="8"/>
+        <TopLine Value="871"/>
+        <CursorPos X="6" Y="887"/>
         <UsageCount Value="216"/>
+        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
-      </Unit11>
-      <Unit12>
+      </Unit10>
+      <Unit11>
         <Filename Value="Core/process/ethreads.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="EThreads"/>
-        <EditorIndex Value="-1"/>
-        <CursorPos Y="23"/>
-        <FoldState Value=" T3N033 pjZk30}N6"/>
+        <EditorIndex Value="7"/>
+        <TopLine Value="356"/>
+        <CursorPos X="29" Y="367"/>
         <UsageCount Value="200"/>
+        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
-      </Unit12>
-      <Unit13>
+      </Unit11>
+      <Unit12>
         <Filename Value="Core/GUI/gui.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="GUI"/>
         <EditorIndex Value="-1"/>
+        <TopLine Value="100"/>
         <UsageCount Value="200"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
-      </Unit13>
-      <Unit14>
+      </Unit12>
+      <Unit13>
         <Filename Value="Core/interactive.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Interactive"/>
@@ -149,265 +144,370 @@
         <CursorPos X="10" Y="2"/>
         <UsageCount Value="354"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
-      </Unit14>
-      <Unit15>
+      </Unit13>
+      <Unit14>
         <Filename Value="Core/nativehooks.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="NativeHooks"/>
-        <EditorIndex Value="-1"/>
+        <EditorIndex Value="13"/>
+        <TopLine Value="52"/>
+        <CursorPos X="58" Y="67"/>
         <UsageCount Value="295"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit14>
+      <Unit15>
+        <Filename Value="memmanager.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="MemManager"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="77"/>
+        <CursorPos X="12" Y="43"/>
+        <UsageCount Value="206"/>
+        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit15>
       <Unit16>
-        <Filename Value="Core/jsemuobj.pas"/>
-        <UnitName Value="JSEmuObj"/>
-        <EditorIndex Value="9"/>
-        <TopLine Value="265"/>
-        <CursorPos X="42" Y="271"/>
-        <UsageCount Value="114"/>
-        <Loaded Value="True"/>
+        <Filename Value="Core/jsemumem.pas"/>
+        <UnitName Value="JSEmuMem"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="25"/>
+        <CursorPos X="34" Y="29"/>
+        <UsageCount Value="171"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit16>
       <Unit17>
-        <Filename Value="Core/besenunits.inc"/>
+        <Filename Value="Core/jsplugins_bengine.pas"/>
+        <UnitName Value="JSPlugins_BEngine"/>
         <EditorIndex Value="-1"/>
-        <TopLine Value="73"/>
-        <CursorPos X="3" Y="89"/>
-        <UsageCount Value="208"/>
+        <CursorPos X="22"/>
+        <FoldState Value=" T3iX0d031o"/>
+        <UsageCount Value="114"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit17>
       <Unit18>
-        <Filename Value="Core/unicorn/Unicorn_dyn.pas"/>
-        <EditorIndex Value="6"/>
-        <TopLine Value="666"/>
-        <CursorPos X="18" Y="669"/>
-        <UsageCount Value="35"/>
+        <Filename Value="Core/jsemuobj.pas"/>
+        <UnitName Value="JSEmuObj"/>
+        <EditorIndex Value="16"/>
+        <TopLine Value="45"/>
+        <CursorPos X="12" Y="54"/>
+        <UsageCount Value="112"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit18>
       <Unit19>
-        <Filename Value="Core/PE/PE.ExportSym.pas"/>
+        <Filename Value="Core/besenunits.inc"/>
         <EditorIndex Value="-1"/>
-        <TopLine Value="14"/>
-        <CursorPos X="5" Y="24"/>
-        <UsageCount Value="69"/>
+        <CursorPos X="3"/>
+        <UsageCount Value="74"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit19>
       <Unit20>
-        <Filename Value="Core/PE/PE.Common.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="133"/>
-        <CursorPos X="3" Y="144"/>
-        <UsageCount Value="14"/>
+        <Filename Value="Core/unicorn/Unicorn_dyn.pas"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="491"/>
+        <CursorPos X="27" Y="504"/>
+        <UsageCount Value="127"/>
+        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit20>
       <Unit21>
-        <Filename Value="/usr/local/share/fpcsrc/rtl/objpas/sysutils/syshelph.inc"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="141"/>
-        <CursorPos X="128" Y="149"/>
-        <UsageCount Value="14"/>
-      </Unit21>
-      <Unit22>
-        <Filename Value="/usr/local/share/fpcsrc/packages/rtl-objpas/src/inc/strutils.pp"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="143"/>
-        <CursorPos X="27" Y="177"/>
-        <UsageCount Value="14"/>
-      </Unit22>
-      <Unit23>
         <Filename Value="Core/Zydis/Zydis.Formatter.pas"/>
         <EditorIndex Value="-1"/>
-        <TopLine Value="21"/>
-        <UsageCount Value="193"/>
+        <TopLine Value="578"/>
+        <CursorPos X="42" Y="588"/>
+        <UsageCount Value="59"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit21>
+      <Unit22>
+        <Filename Value="Core/Zydis/Zydis.pas"/>
+        <EditorIndex Value="4"/>
+        <TopLine Value="380"/>
+        <CursorPos X="3" Y="393"/>
+        <UsageCount Value="159"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit22>
+      <Unit23>
+        <Filename Value="Core/jsplugins_engine.pas"/>
+        <UnitName Value="JSPlugins_Engine"/>
+        <EditorIndex Value="14"/>
+        <TopLine Value="336"/>
+        <CursorPos X="3" Y="276"/>
+        <UsageCount Value="109"/>
+        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit23>
       <Unit24>
-        <Filename Value="Core/Zydis/Zydis.pas"/>
-        <EditorIndex Value="5"/>
-        <TopLine Value="1129"/>
-        <CursorPos X="34" Y="1140"/>
-        <UsageCount Value="212"/>
+        <Filename Value="Core/QJS/quickjs.pas"/>
+        <UnitName Value="QuickJS"/>
+        <EditorIndex Value="15"/>
+        <TopLine Value="489"/>
+        <CursorPos X="13" Y="500"/>
+        <UsageCount Value="142"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit24>
       <Unit25>
-        <Filename Value="Core/Crypto/xxhash.pas"/>
-        <UnitName Value="xxHash"/>
+        <Filename Value="/Developer/lazarus/components/lazutils/lazfileutils.pas"/>
+        <UnitName Value="LazFileUtils"/>
         <EditorIndex Value="-1"/>
-        <TopLine Value="155"/>
-        <CursorPos X="69" Y="164"/>
-        <UsageCount Value="105"/>
+        <UsageCount Value="49"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit25>
       <Unit26>
-        <Filename Value="/usr/local/share/fpcsrc/rtl/inc/dynlibs.pas"/>
+        <Filename Value="../../FPC/freepascal/rtl/inc/cmem.pp"/>
         <EditorIndex Value="-1"/>
-        <TopLine Value="44"/>
-        <CursorPos X="10" Y="53"/>
-        <UsageCount Value="5"/>
+        <TopLine Value="139"/>
+        <CursorPos X="5" Y="181"/>
+        <UsageCount Value="46"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit26>
       <Unit27>
-        <Filename Value="/Developer/lazarus/packager/registration/fcllaz.pas"/>
+        <Filename Value="Core/unicorn/UnicornConst.pas"/>
         <EditorIndex Value="-1"/>
-        <CursorPos X="3" Y="11"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="54"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit27>
       <Unit28>
-        <Filename Value="/usr/local/share/fpcsrc/packages/regexpr/src/regexpr.pas"/>
-        <UnitName Value="RegExpr"/>
+        <Filename Value="../../FPC/freepascal/rtl/objpas/sysutils/sysutilh.inc"/>
         <EditorIndex Value="-1"/>
-        <TopLine Value="517"/>
-        <CursorPos X="14" Y="551"/>
-        <UsageCount Value="10"/>
+        <TopLine Value="141"/>
+        <CursorPos X="14" Y="145"/>
+        <UsageCount Value="86"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit28>
       <Unit29>
-        <Filename Value="Core/JS/BESENDecompiler.pas"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="2"/>
-        <TopLine Value="19"/>
-        <CursorPos X="15" Y="29"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
+        <Filename Value="C:/lazarus/packager/registration/fcllaz.pas"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="3" Y="11"/>
+        <UsageCount Value="6"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit29>
+      <Unit30>
+        <Filename Value="../MHTLoader/FPC/Demo.ppr"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="7"/>
+        <DefaultSyntaxHighlighter Value="None"/>
+      </Unit30>
+      <Unit31>
+        <Filename Value="Core/generics_collections/src/generics.collections.pas"/>
+        <UnitName Value="Generics.Collections"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="24"/>
+        <CursorPos X="50" Y="41"/>
+        <UsageCount Value="0"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit31>
+      <Unit32>
+        <Filename Value="Core/PE/PE.Image.pas"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="0"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit32>
+      <Unit33>
+        <Filename Value="Core/generics_collections/src/inc/generics.dictionariesh.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="500"/>
+        <CursorPos X="14" Y="512"/>
+        <UsageCount Value="16"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit33>
+      <Unit34>
+        <Filename Value="Core/PE/PE.Common.pas"/>
+        <EditorIndex Value="6"/>
+        <CursorPos X="3" Y="26"/>
+        <UsageCount Value="58"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit34>
+      <Unit35>
+        <Filename Value="../../FPCross/fpcsrc/rtl/objpas/sysutils/syshelph.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="556"/>
+        <CursorPos X="38" Y="562"/>
+        <UsageCount Value="3"/>
+      </Unit35>
+      <Unit36>
+        <Filename Value="../../FPCross/fpcsrc/rtl/inc/heaph.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="16"/>
+        <CursorPos X="3" Y="25"/>
+        <UsageCount Value="6"/>
+      </Unit36>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
-        <Filename Value="Core/Zydis/Zydis.pas"/>
-        <Caret Line="1434" TopLine="1422"/>
+        <Filename Value="Core/emu.pas"/>
+        <Caret Line="128" Column="15" TopLine="121"/>
       </Position1>
       <Position2>
         <Filename Value="Core/emu.pas"/>
-        <Caret Line="1400" Column="30" TopLine="1395"/>
+        <Caret Line="130" Column="14" TopLine="124"/>
       </Position2>
       <Position3>
-        <Filename Value="Core/Zydis/Zydis.pas"/>
-        <Caret Line="972" Column="19" TopLine="1199"/>
+        <Filename Value="Core/emu.pas"/>
+        <Caret Line="1121" Column="31" TopLine="1111"/>
       </Position3>
       <Position4>
-        <Filename Value="Core/Zydis/Zydis.pas"/>
-        <Caret Line="1669" Column="5" TopLine="1224"/>
+        <Filename Value="Core/pe_loader.pas"/>
+        <Caret Line="116" Column="26" TopLine="116"/>
       </Position4>
       <Position5>
-        <Filename Value="Cmulator.pas"/>
-        <Caret Line="43" Column="40" TopLine="30"/>
+        <Filename Value="Core/pe_loader.pas"/>
+        <Caret Line="76" Column="7" TopLine="69"/>
       </Position5>
       <Position6>
         <Filename Value="Core/pe_loader.pas"/>
-        <Caret Line="702" Column="42" TopLine="689"/>
+        <Caret Line="125" Column="12" TopLine="117"/>
       </Position6>
       <Position7>
-        <Filename Value="Core/utils.pas"/>
-        <Caret Line="57" Column="26" TopLine="47"/>
+        <Filename Value="Core/pe_loader.pas"/>
+        <Caret Line="76" Column="7" TopLine="68"/>
       </Position7>
       <Position8>
-        <Filename Value="Core/emu.pas"/>
-        <Caret Line="1344" Column="45" TopLine="1336"/>
+        <Filename Value="Core/pe_loader.pas"/>
+        <Caret Line="125" Column="12" TopLine="117"/>
       </Position8>
       <Position9>
-        <Filename Value="Core/emu.pas"/>
-        <Caret Line="1370" Column="20" TopLine="1356"/>
+        <Filename Value="Core/pe_loader.pas"/>
+        <Caret Line="76" Column="7" TopLine="68"/>
       </Position9>
       <Position10>
-        <Filename Value="Core/emu.pas"/>
-        <Caret Line="1355" Column="18" TopLine="1349"/>
+        <Filename Value="Core/pe_loader.pas"/>
+        <Caret Line="125" Column="12" TopLine="117"/>
       </Position10>
       <Position11>
-        <Filename Value="Core/emu.pas"/>
-        <Caret Line="1354" Column="68" TopLine="1345"/>
+        <Filename Value="Core/pe_loader.pas"/>
+        <Caret Line="124" Column="30" TopLine="117"/>
       </Position11>
       <Position12>
-        <Filename Value="Core/utils.pas"/>
-        <Caret Line="59" TopLine="66"/>
+        <Filename Value="Core/pe_loader.pas"/>
+        <Caret Line="140" Column="28" TopLine="133"/>
       </Position12>
       <Position13>
-        <Filename Value="Core/utils.pas"/>
-        <Caret Line="96" Column="18" TopLine="92"/>
+        <Filename Value="Core/segments.pas"/>
+        <Caret Line="144" Column="12" TopLine="134"/>
       </Position13>
       <Position14>
-        <Filename Value="Core/emu.pas"/>
-        <Caret Line="1343" Column="17" TopLine="1342"/>
+        <Filename Value="Core/segments.pas"/>
+        <Caret Line="174" Column="12" TopLine="174"/>
       </Position14>
       <Position15>
-        <Filename Value="Core/utils.pas"/>
-        <Caret Line="7" Column="51"/>
+        <Filename Value="Core/pe_loader.pas"/>
+        <Caret Line="76" Column="7" TopLine="68"/>
       </Position15>
       <Position16>
-        <Filename Value="Core/utils.pas"/>
-        <Caret Line="57" Column="26" TopLine="61"/>
+        <Filename Value="Core/jsplugins_engine.pas"/>
+        <Caret Line="381" Column="28" TopLine="370"/>
       </Position16>
       <Position17>
-        <Filename Value="Core/pe_loader.pas"/>
-        <Caret Line="702" Column="42" TopLine="689"/>
+        <Filename Value="Core/jsemuobj.pas"/>
+        <Caret Line="56" Column="12" TopLine="45"/>
       </Position17>
       <Position18>
-        <Filename Value="Core/pe_loader.pas"/>
-        <Caret Line="175" Column="93" TopLine="166"/>
+        <Filename Value="Core/tep_peb.pas"/>
+        <Caret Line="568" Column="21" TopLine="532"/>
       </Position18>
       <Position19>
-        <Filename Value="Core/pe_loader.pas"/>
-        <Caret Line="276" Column="34" TopLine="260"/>
+        <Filename Value="Core/tep_peb.pas"/>
+        <Caret Line="493" Column="19" TopLine="481"/>
       </Position19>
       <Position20>
-        <Filename Value="Core/emu.pas"/>
-        <Caret Line="12" Column="30"/>
+        <Filename Value="Core/tep_peb.pas"/>
+        <Caret Line="7" Column="9"/>
       </Position20>
       <Position21>
-        <Filename Value="Core/emu.pas"/>
-        <Caret Line="1370" Column="7" TopLine="1345"/>
+        <Filename Value="Core/tep_peb.pas"/>
+        <Caret Line="493" Column="19" TopLine="478"/>
       </Position21>
       <Position22>
-        <Filename Value="Core/emu.pas"/>
-        <Caret Line="1358" Column="6" TopLine="1350"/>
+        <Filename Value="Core/tep_peb.pas"/>
+        <Caret Line="664" Column="12" TopLine="658"/>
       </Position22>
       <Position23>
-        <Filename Value="Core/utils.pas"/>
-        <Caret Line="58" Column="18" TopLine="48"/>
+        <Filename Value="Core/tep_peb.pas"/>
+        <Caret Line="665" Column="7" TopLine="658"/>
       </Position23>
       <Position24>
-        <Filename Value="Core/emu.pas"/>
-        <Caret Line="1358" Column="6" TopLine="1350"/>
+        <Filename Value="Core/process/ethreads.pas"/>
+        <Caret Line="371" Column="17" TopLine="356"/>
       </Position24>
       <Position25>
-        <Filename Value="Core/emu.pas"/>
-        <Caret Line="152" Column="23" TopLine="137"/>
+        <Filename Value="Core/jsplugins_engine.pas"/>
+        <Caret Line="331" Column="28" TopLine="319"/>
       </Position25>
       <Position26>
         <Filename Value="Core/emu.pas"/>
-        <Caret Line="147" Column="72" TopLine="137"/>
+        <Caret Line="1046" Column="37" TopLine="1038"/>
       </Position26>
       <Position27>
-        <Filename Value="Core/emu.pas"/>
-        <Caret Line="148" Column="54" TopLine="137"/>
+        <Filename Value="Core/jsplugins_engine.pas"/>
+        <Caret Line="26" Column="11" TopLine="15"/>
       </Position27>
       <Position28>
-        <Filename Value="Core/emu.pas"/>
-        <Caret Line="151" Column="28" TopLine="137"/>
+        <Filename Value="Core/jsplugins_engine.pas"/>
+        <Caret Line="276" Column="3" TopLine="268"/>
       </Position28>
       <Position29>
-        <Filename Value="Cmulator.pas"/>
-        <Caret Line="33" Column="29" TopLine="30"/>
+        <Filename Value="Core/emu.pas"/>
+        <Caret Line="864" Column="23" TopLine="857"/>
       </Position29>
       <Position30>
-        <Filename Value="Core/globals.pas"/>
-        <Caret Line="20" Column="23" TopLine="5"/>
+        <Filename Value="Core/emu.pas"/>
+        <Caret Line="941" Column="62" TopLine="923"/>
       </Position30>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
-      <Modes Count="0" ActiveMode="default"/>
+      <Modes ActiveMode="default"/>
     </RunParams>
+    <HistoryLists Count="2">
+      <List0 Name="LaunchingApplication" Type="File" Count="2">
+        <Item1 Value="C:\Windows\system32\cmd.exe \C ${TargetCmdLine}"/>
+        <Item2 Value="C:\Windows\system32\cmd.exe /C ${TargetCmdLine}"/>
+      </List0>
+      <List1 Name="CommandLineParameters" Count="2">
+        <Item1 Value="-f C:\Windows\System32\cmd.exe -q"/>
+        <Item2 Value="-f D:\Coldzer0\Reverse\Malwares\FinFish\Fin\fin1.exe"/>
+      </List1>
+    </HistoryLists>
   </ProjectSession>
   <Debugging>
-    <BreakPoints Count="1">
-      <Item1>
+    <BreakPoints>
+      <Item>
         <Kind Value="bpkSource"/>
         <WatchScope Value="wpsLocal"/>
         <WatchKind Value="wpkWrite"/>
         <Source Value="Core/JS/BESENObject.pas"/>
         <Line Value="2434"/>
-      </Item1>
+      </Item>
+      <Item>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="Core/jsplugins_engine.pas"/>
+        <Line Value="300"/>
+      </Item>
+      <Item>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="Core/pe_loader.pas"/>
+        <Line Value="326"/>
+      </Item>
+      <Item>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="Core/pe_loader.pas"/>
+        <Line Value="500"/>
+      </Item>
     </BreakPoints>
+    <Watches>
+      <Item>
+        <Expression Value="FWLib"/>
+      </Item>
+    </Watches>
   </Debugging>
 </CONFIG>

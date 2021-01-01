@@ -1,21 +1,23 @@
-unit Segments;
-
 {$IFDEF FPC}
     {$MODE Delphi}
     {$PackRecords C}
+    {$SMARTLINK ON}
 {$ENDIF}
+unit Segments;
+
+
 
 interface
 
 uses
   Classes, SysUtils , ctypes , math,
-  Unicorn_dyn, UnicornConst, X86Const,Utils,TEP_PEB;
+  Unicorn_dyn, UnicornConst, X86Const,Utils;
 
 
 type
-  T4Bits=0..15;
-  T2Bits=0..3;
-  T1Bit=0..1;
+  T4Bits = 0..15;
+  T2Bits = 0..3;
+  T1Bit  = 0..1;
 
   TFlags = bitpacked record
     case boolean of
@@ -56,9 +58,9 @@ type
   TSegmentDescriptor = bitpacked record
     case boolean of
     false :(
-      limit0      : cshort ;
-      base0       : cshort ;
-      base1       : cchar ;
+      limit0      : cshort;
+      base0       : cshort;
+      base1       : cchar;
       &type       : T4Bits;
       system      : T1Bit;   //* S flag */
       dpl         : T2Bits;
@@ -212,12 +214,12 @@ begin
   Result := flags;
   Result := UInt64(Result or idx shl 3);
 end;
-                                                               // access, flags
+                                                            // access, flags
 procedure Init_Descriptor(desc : PSegmentDescriptor; base, limit : UInt32;  is_code : boolean);
 begin
   desc.desc := 0;  //clear the descriptor .
   desc.base0 := base and $ffff;
-  desc.base1 := (base shr 16) and $ff;
+  desc.base1 := cchar((base shr 16) and $ff);
   desc.base2 := base shr 24;
   if (limit > $fffff) then
   begin
@@ -225,7 +227,7 @@ begin
       limit := limit shr 12;
       desc.granularity := 1;
   end;
-  desc.limit0 := limit and $ffff;
+  desc.limit0 := cshort(limit and $ffff);
   desc.limit1 := limit shr 16;
 
   //some sane defaults
@@ -236,7 +238,6 @@ begin
   desc.db := 1;   //32 bit
   desc.&type := ifthen(is_code, $b, 3);
   desc.system := 1;  //code or data
-
 end;
 
 // not used but maybe i'll improve it .
@@ -264,4 +265,3 @@ begin
 end;
 
 end.
-

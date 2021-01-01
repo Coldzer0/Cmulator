@@ -25,14 +25,15 @@
 ***************************************************************************************************}
 
 unit Zydis;
-
+{$WARN 3031 off : Values in enumeration types have to be ascending}
+{$IFDEF FPC}
+  {$MODE DELPHI}
+  {$WARNINGS OFF}
+  {$HINTS OFF}
+{$ENDIF}
 interface
 
 {.$DEFINE ZYDIS_DYNAMIC_LINK}
-
-{$IFDEF FPC}
-  {$MODE DELPHI}
-{$ENDIF}
 
 {* ============================================================================================== *}
 {* Constants                                                                                      *}
@@ -1437,7 +1438,7 @@ procedure ZydisGetAccessedFlags; external
 
 {$IFDEF CPUX86}
 
-function c_udivdi3(num,den:uint64):uint64; cdecl; {$ifdef darwin}[public, alias: '___udivdi3'];{$else}[public, alias: '___udivdi3'];{$endif}
+function c_udivdi3(num,den:uint64):uint64; cdecl; {$ifdef darwin}[public, alias: '___udivdi3'];{$else}alias: '___udivdi3';{$endif}
 begin
  result:=num div den;
 end;

@@ -1,10 +1,4 @@
-# Cmulator - Scriptable x86 RE Sandbox Emulator (v0.2 Beta)
-
-
-[![Join the chat at https://gitter.im/x86_emulator/community](https://badges.gitter.im/x86_emulator/cmulator.svg)](https://gitter.im/x86_emulator/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-<h3> <b>Call for LOGO</b> , if you good at design give it a try and Create Logo for Cmulator <br>
-your name will appear in <b>Acknowledgements</b>
+# Cmulator - Scriptable x86 RE Sandbox Emulator (v0.3 Beta)
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
@@ -48,6 +42,8 @@ Based on Unicorn & Capstone Engine & javascript .
 
 
 ## [+] Changelog
+- V0.3 Beta
+  - This is the last supported Pascal version and new code base (C/C++) will be in here https://github.com/Cmulator/Cmulator . 
 
 -	v0.2 beta
 	-	[+] Add Hook Address
@@ -543,6 +539,7 @@ And Try it Your Self , find it at "samples/obfuscated/obfuscated.exe" 😉
 * Freepascal >= v3
 * Unicorn Engine 
 * Zydis Engine
+* QuickJS Engine
 
 <hr>
 
@@ -610,7 +607,7 @@ set the dll folders to where you stored your windows dlls and JS Main File .
 
 # Documentation
 
-## Still working on it , will be available soon .
+## Still working on it , will be available soon.
 
 <hr>
 
@@ -625,7 +622,7 @@ this work inspired by :
 - [xori](https://github.com/endgameinc/xori) - I Used there Method To Build LDR . 
 
 Used OpenSource Projects :
-- [Besen Engine](https://github.com/bero1985/besen)
+- [QuickJS Engine](https://github.com/bellard/quickjs)
 - [Unicorn Engine](https://github.com/unicorn-engine/unicorn)
 - [Zydis Engine](https://github.com/zyantific/zydis)
 - [PE Parser](https://github.com/oranke/pe-image-for-Lazarus) 

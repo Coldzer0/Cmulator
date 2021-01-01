@@ -1,27 +1,24 @@
-unit Emu;
-
 {$IFDEF FPC}
     {$MODE Delphi}
     {$PackRecords C}
     {$AsmMode intel}
+    {$SMARTLINK ON}
 {$ENDIF}
+unit Emu;
+
 
 interface
 
 uses
-  Classes, SysUtils,cmem,Crt,
-  strutils,LazUTF8,math,LazFileUtils,
+  Classes, SysUtils, cmem, strutils ,math,
   Unicorn_dyn , UnicornConst, X86Const,
+  quickjs,
   Segments,Utils,PE_loader,xxHash,superobject,
   PE.Image,
-  PE.Section,
-  PE.ExportSym,
   FnHook,TEP_PEB,
   Generics.Collections,Generics.Defaults,
-  {$i besenunits.inc},EThreads,
+  EThreads,
   Zydis,
-  Zydis.Exception ,
-  Zydis.Decoder ,
   Zydis.Formatter;
 
 type
@@ -49,10 +46,15 @@ type
     count : Byte;
     first,
     last,
-    &alias : string;
+    _alias : string;
   end;
-
   TApiSetSchema = TFastHashMap<String, TApiRed>;
+
+  TApiInfo = record
+    ISAPI,
+    APIHandled,
+    CalledFromMainExe : Boolean;
+  end;
 
 { TEmu }
   TEmu = class
@@ -73,24 +75,21 @@ type
     gs_address : UInt64;
     gdtr : uc_x86_mmr;
 
-    // x32 registers .
-    r_eax,r_ecx,r_edx,r_ebx,r_esp,r_ebp,r_esi,r_edi,r_eip : DWORD;
-    // x64 registers .
-    r_rax,r_rcx,r_rdx,r_rbx,r_rsp,r_rbp,r_rsi,r_rdi,r_rip : UInt64;
+    // Stack Var.
+    SP : Int64;
 
     PE,SCode : TMemoryStream;
     MapedPE : Pointer;
 
     // Handle Dlls and it's Memory .
     FLibs : TLibs;
-    FHooks : THookByName;
 
     OnExitList : TOnExit;
   public
 
     Formatter : Zydis.Formatter.TZydisFormatter;
 
-    LastGoodPC : UInt64;
+    Entry, LastGoodPC : UInt64;
     Flags : TFlags;
     r_cs,r_ss,r_ds,r_es,r_fs,r_gs : DWORD;
 
@@ -110,7 +109,7 @@ type
 
     Img: TPEImage;
     uc : uc_engine;
-
+    tContext : uc_context;
     Hooks : THooks;
 
 
@@ -127,6 +126,8 @@ type
     procedure SetHooks();
     function MapPEtoUC() : Boolean;
     procedure Start();
+    function SaveCPUState : Boolean;
+    function RestoreCPUState : Boolean;
     procedure ResetEFLAGS();
     function init_segments() : boolean;
     function GetGDT(index : Integer): Pointer;
@@ -140,19 +141,7 @@ var
 
 implementation
   uses
-    Globals,NativeHooks;
-
-procedure CheckForSig();
-begin
-  if KeyPressed then            //  <--- CRT function to test key press
-    if ReadKey = ^C then        // read the key pressed
-    begin
-      Writeln(#10#10);
-      writeln('Ctrl-C pressed ¯\_(ツ)_/¯ ');
-      Writeln(#10#10);
-      halt;
-    end;
-end;
+    Globals,NativeHooks,JSPlugins_Engine;
 
 function Handle_SEH(uc : uc_engine; ExceptionCode : DWORD): Boolean;
 var
@@ -169,7 +158,7 @@ begin
   Emulator.err := uc_reg_read(uc, ifthen(Emulator.isx64,UC_X86_REG_RSP,UC_X86_REG_ESP), @Old_ESP);
 
   Emulator.err := uc_reg_read(uc, ifthen(Emulator.Is_x64,UC_X86_REG_RIP,UC_X86_REG_EIP), @PC);
-  ZwContinue := Utils.GetProcAddr(Utils.GetModulehandle('ntdll'),'ZwContinue');
+  ZwContinue := Utils.GetProcAddr(Utils.CmuGetModulehandle('ntdll'),'ZwContinue');
 
   SEH := ReadDword(Emulator.TEB);
   if Emulator.err <> UC_ERR_OK then
@@ -276,8 +265,6 @@ begin
 end;
 
 function HookMemInvalid(uc: uc_engine; _type: uc_mem_type; address: UInt64; size: Cardinal; value: Int64; user_data: Pointer): Boolean; cdecl;
-var
-  r_eax : QWORD;
 begin
   Result := False;
   if Emulator.Stop then exit;
@@ -395,99 +382,73 @@ end;
 
 function CallJS(var API : TLibFunction; var Hook : THookFunction ;ret : UInt64) : boolean;
 var
-  a: array[0..2] of PBESENValue;
-  JSEmuObj, JSAPIObj, return, AResult : TBESENValue;
-  JSAPI : TBESENObject;
+  Args : array[0..1] of JSValueConst;
+  AResult , JSErr : JSValue;
+  JSAPI : JSValue;
   isEx : Boolean;
 begin
   Result := False;
 
-  if Assigned(JS) and Assigned(Hook.JSHook) and Assigned(Hook.JSHook.OnCallBack) then
+  if Assigned(ctx) and JS_IsObject(Hook.JSAPI.JSHook) and JS_IsFunction(ctx,Hook.JSAPI.OnCallBack) then
   begin
     //Writeln(#10'====================== CallBack to JS =========================='#10);
 
-    JSAPI := TBESENObject.Create(JS,TBESEN(JS).ObjectPrototype,false);
-    TBESEN(JS).GarbageCollector.Add(JSAPI);
+    JSAPI := JS_NewObject(ctx);
 
     isEx := API.FuncName.EndsWith('Ex') or
             API.FuncName.EndsWith('ExA') or
             API.FuncName.EndsWith('ExW');
 
-    JSAPI.OverwriteData('IsEx',BESENBooleanValue(isEx),[bopaCONFIGURABLE]);
-    JSAPI.OverwriteData('IsWapi',BESENBooleanValue(API.FuncName.EndsWith('W')),[bopaCONFIGURABLE]);
-    JSAPI.OverwriteData('IsFW',BESENBooleanValue(API.IsForwarder),[bopaCONFIGURABLE]);
-    JSAPI.OverwriteData('LibName',BESENStringValue(BESENUTF8ToUTF16(API.LibName)),[bopaCONFIGURABLE]);
-    JSAPI.OverwriteData('name',  BESENStringValue(BESENUTF8ToUTF16(API.FuncName)),[bopaCONFIGURABLE]);
-    JSAPI.OverwriteData('FWName',BESENStringValue(BESENUTF8ToUTF16(API.FWName)),[bopaCONFIGURABLE]);
-    JSAPI.OverwriteData('Address',BESENNumberValue(API.VAddress),[bopaCONFIGURABLE]);
-    JSAPI.OverwriteData('Ordinal',BESENNumberValue(API.ordinal),[bopaCONFIGURABLE]);
-    TBESEN(JS).GarbageCollector.Protect(TBESENObject(JSAPI));
+    JS_SetPropertyStr(ctx,JSAPI,'IsEx',JS_NewBool(ctx,isEx));
+    JS_SetPropertyStr(ctx,JSAPI,'IsWapi',JS_NewBool(ctx,API.FuncName.EndsWith('W')));
+    JS_SetPropertyStr(ctx,JSAPI,'IsFW',JS_NewBool(ctx,API.IsForwarder));
+    JS_SetPropertyStr(ctx,JSAPI,'LibName',JS_NewString(ctx,PChar(API.LibName)));
+    JS_SetPropertyStr(ctx,JSAPI,'name',  JS_NewString(ctx,PChar(API.FuncName)));
+    JS_SetPropertyStr(ctx,JSAPI,'FWName',JS_NewString(ctx,PChar(API.FWName)));
+    JS_SetPropertyStr(ctx,JSAPI,'Address',JS_NewInt64(ctx,API.VAddress));
+    JS_SetPropertyStr(ctx,JSAPI,'Ordinal',JS_NewInt32(ctx,API.ordinal));
 
-    a[0]:=@JSEmuObj;
-    a[1]:=@JSAPIObj;
-    a[2]:=@return;
 
-    JSEmuObj := BESENObjectValue(TBESENObject(JSEmu));
-    JSAPIObj := BESENObjectValue(TBESENObject(JSAPI));
-    return   := BESENNumberValue(ret);
+    Args[0]:= JSAPI;
+    Args[1]:= JS_NewInt64(ctx,ret);
+    AResult := JS_FALSE;
 
-    try
-       AResult.ValueType := bvtBOOLEAN;
-
-       if assigned(Hook.JSHook.OnCallBack) then
-       begin
-         try
-            Hook.JSHook.OnCallBack.Call(BESENObjectValue(Hook.JSHook.OnCallBack), @a, 3, AResult);
-         except
-            on e: EBESENError do
-            begin
-              TextColor(LightRed);
-              WriteLn(Format('%s ( Line %d ): %s', [e.Name, TBESEN(JS).LineNumber, e.Message]));
-              NormVideo;
-              halt(-1);
-            end;
-            on e: exception do
-            begin
-              TextColor(LightRed);
-              WriteLn(Format('%s ( Line %d ): %s', ['Exception', TBESEN(JS).LineNumber, e.Message]));
-              NormVideo;
-              halt(-1);
-            end;
-         end;
-       end;
-    except
-       on e: EBESENError do
-       begin
-         WriteLn(Format('%s ( Line %d ): %s', [e.Name, TBESEN(JS).LineNumber, e.Message]));
-         halt(-1);
-       end;
-
-       on e: exception do
-       begin
-         WriteLn(Format('%s ( Line %d ): %s', ['Exception', TBESEN(JS).LineNumber, e.Message]));
-         halt(-1);
-       end;
+    if JS_IsFunction(ctx,Hook.JSAPI.OnCallBack) then
+    begin
+      AResult := JS_Call(ctx,Hook.JSAPI.OnCallBack,Hook.JSAPI.JSHook,Length(Args),@Args);
+      if JS_IsException(AResult) then
+      begin
+        js_std_dump_error(ctx);
+        halt();
+      end;
     end;
-    if AResult.ValueType = bvtBOOLEAN then
+    if JS_IsBool(AResult) then
     begin
       if VerboseEx and (not Emulator.RunOnDll) then
-         Writeln('JS Return : ' ,BoolToStr(Boolean(AResult.Bool),'True','False'));
-
-      Result := Boolean(AResult.Bool);
+      begin
+        Writeln('JS Return : ' ,JS_VALUE_GET_BOOL(AResult));
+      end;
+      Result := JS_VALUE_GET_BOOL(AResult);
     end;
-    TBESEN(JS).GarbageCollector.Unprotect(TBESENObject(JSAPI));
-    FreeAndNil(JSAPI);
+    JS_FreeValue(ctx,JSAPI);
     //Writeln(#10'================================================================'#10);
+  end
+  else
+  begin
+    JSErr := JS_GetException(ctx);
+    if JS_IsException(JSErr) then
+    begin
+      js_std_dump_error(ctx);
+    end;
   end;
 end;
 
-function CheckHook(uc : uc_engine ; PC : UInt64) : Boolean;
+function CheckHook(uc : uc_engine ; PC : UInt64) : TApiInfo;
 var
   lib  : TNewDll;
   API  : TLibFunction;
   Hook : THookFunction;
   Hash : UInt64;
-  APIHandled : Boolean;
   ret : UInt64;
 begin
   ret := 0;
@@ -497,10 +458,10 @@ begin
   FillByte(lib,SizeOf(lib),0);
   Initialize(Hook);
 
-  Result := False; APIHandled := False;
+  Result.ISAPI := False; Result.APIHandled := False;
   for lib in Emulator.Libs.Values do
-  begin                                                             // todo remove after implementing apischemia redirect .
-    if (PC > lib.BaseAddress) and (PC < (lib.BaseAddress + lib.ImageSize)) { or ( (PC >= $30000) and (PC < $EFFFF) )} then
+  begin
+    if (PC > lib.BaseAddress) and (PC < (lib.BaseAddress + lib.ImageSize)) then
     begin
       if lib.Dllname.Length < 3 then Continue;
       if lib.Dllname.IsEmpty then Continue;
@@ -535,13 +496,18 @@ begin
 
         API.Hits += 1; // how many times this API Called .API
         API.Return := ret; // the Return Address used for OnExit CallBack .
-        if Assigned(Hook.JSHook) and Assigned(Hook.JSHook.OnExit) then
+        if JS_IsObject(Hook.JSAPI.JSHook) and JS_IsFunction(ctx,Hook.JSAPI.OnExit) then
         begin
           Hook.API := API;
           Emulator.OnExitList.AddOrSetValue(ret,Hook);
         end;
 
-        Result := True;
+        Result.ISAPI := True;
+        if (ret > Emulator.Img.ImageBase) and
+        (ret < (Emulator.Img.ImageBase + Emulator.Img.SizeOfImage)) then
+        begin
+          Result.CalledFromMainExe := True;
+        end;
 
         if Verbose and (not Emulator.RunOnDll) then
         begin
@@ -553,19 +519,19 @@ begin
           end;
         end;
 
-        if (Hook.JSHook <> nil) then
+        if JS_IsObject(Hook.JSAPI.JSHook) and (JS_IsFunction(ctx,Hook.JSAPI.OnCallBack)) then
         begin
-          APIHandled := CallJS(Api,Hook,ret);
+          Result.APIHandled := CallJS(Api,Hook,ret);
         end
         else if (Hook.NativeCallBack <> nil) then
         begin
-          APIHandled := TFnCallBack(Hook.NativeCallBack)(uc,PC,ret);
+          Result.APIHandled := TFnCallBack(Hook.NativeCallBack)(uc,PC,ret);
         end
         else
         begin
           if VerboseEx or (not Emulator.RunOnDll) then
           begin
-            TextColor(Crt.LightRed);
+            TextColor(LightRed);
             Writeln();
             WriteLn(Format('[x] UnHooked Call to %s.%-30s',[API.LibName,IfThen(API.FuncName<>'',API.FuncName,'#'+hexStr(API.ordinal,3))]));
             Writeln(Format('[#] Will Return to : 0x%x',[ret]));
@@ -576,7 +542,7 @@ begin
 
         if (not Emulator.Stop) then
         begin
-          if not APIHandled then
+          if not Result.APIHandled then
           begin
             //====================== Fix Stack Pointer ================================//
             Utils.pop(); // but this may Corrupt the Stack
@@ -592,80 +558,50 @@ end;
 
 procedure CheckOnExitCallBack(IsAPI : boolean; PC : UInt64);
 var
-  Args : array[0..2] of PBESENValue;
-  JSAPI : TBESENObject;
-  JSEmuObj, JSAPIObj, AResult : TBESENValue;
+  Args : array[0..0] of JSValueConst;
+  JSAPI : JSValue;
+  AResult : JSValue;
   Hook : THookFunction;
+  API : TLibFunction;
   isEx : Boolean;
 begin
   // Check if it's no an API Call :D just to make sure .
   if (not IsAPI) then
   if Emulator.OnExitList.TryGetValue(PC,Hook) then
-  if Assigned(Hook.JSHook) and Assigned(JS) then // Check if an API already Called .
+  if Assigned(ctx) and JS_IsObject(Hook.JSAPI.JSHook) then // Check if an API already Called .
   begin
     if Hook.API.Return = PC then
     begin
-      if Assigned(Hook.JSHook.OnExit) then // check if we have OnExit Callback .
+      if JS_IsFunction(ctx,Hook.JSAPI.OnExit) then // check if we have OnExit Callback .
       begin
-        JSAPI := TBESENObject.Create(JS,TBESEN(JS).ObjectPrototype,false);
-        TBESEN(JS).GarbageCollector.Add(JSAPI);
+        API := Hook.API;
 
-        isEx := Hook.API.FuncName.EndsWith('Ex') or Hook.API.FuncName.EndsWith('ExA') or Hook.API.FuncName.EndsWith('ExW');
-        JSAPI.OverwriteData('IsEx',BESENBooleanValue(isEx),[bopaCONFIGURABLE]);
-        JSAPI.OverwriteData('IsWapi',BESENBooleanValue(Hook.API.FuncName.EndsWith('W')),[bopaCONFIGURABLE]);
-        JSAPI.OverwriteData('IsFW',BESENBooleanValue(Hook.API.IsForwarder),[bopaCONFIGURABLE]);
-        JSAPI.OverwriteData('LibName',BESENStringValue(BESENUTF8ToUTF16(Hook.API.LibName)),[bopaCONFIGURABLE]);
-        JSAPI.OverwriteData('name',  BESENStringValue(BESENUTF8ToUTF16(Hook.API.FuncName)),[bopaCONFIGURABLE]);
-        JSAPI.OverwriteData('FWName',BESENStringValue(BESENUTF8ToUTF16(Hook.API.FWName)),[bopaCONFIGURABLE]);
-        JSAPI.OverwriteData('Address',BESENNumberValue(Hook.API.VAddress),[bopaCONFIGURABLE]);
-        JSAPI.OverwriteData('Ordinal',BESENNumberValue(Hook.API.ordinal),[bopaCONFIGURABLE]);
-        TBESEN(JS).GarbageCollector.Protect(TBESENObject(JSAPI));
+        JSAPI := JS_NewObject(ctx);
 
-        Args[0]:=@JSEmuObj;
-        Args[1]:=@JSAPIObj;
+        isEx := API.FuncName.EndsWith('Ex')  or
+                API.FuncName.EndsWith('ExA') or
+                API.FuncName.EndsWith('ExW');
 
-        JSEmuObj := BESENObjectValue(TBESENObject(JSEmu));
-        JSAPIObj := BESENObjectValue(TBESENObject(JSAPI));
+        JS_SetPropertyStr(ctx,JSAPI,'IsEx',JS_NewBool(ctx,isEx));
+        JS_SetPropertyStr(ctx,JSAPI,'IsWapi',JS_NewBool(ctx,API.FuncName.EndsWith('W')));
+        JS_SetPropertyStr(ctx,JSAPI,'IsFW',JS_NewBool(ctx,API.IsForwarder));
+        JS_SetPropertyStr(ctx,JSAPI,'LibName',JS_NewString(ctx,PChar(API.LibName)));
+        JS_SetPropertyStr(ctx,JSAPI,'name',  JS_NewString(ctx,PChar(API.FuncName)));
+        JS_SetPropertyStr(ctx,JSAPI,'FWName',JS_NewString(ctx,PChar(API.FWName)));
+        JS_SetPropertyStr(ctx,JSAPI,'Address',JS_NewInt64(ctx,API.VAddress));
+        JS_SetPropertyStr(ctx,JSAPI,'Ordinal',JS_NewInt32(ctx,API.ordinal));
 
-        try
-           AResult.ValueType := bvtBOOLEAN;
-
-           if assigned(Hook.JSHook.OnExit) then
-           begin
-             try
-                Hook.JSHook.OnExit.Call(BESENObjectValue(Hook.JSHook.OnExit), @Args, 2, AResult);
-             except
-                on e: EBESENError do
-                begin
-                  TextColor(LightRed);
-                  WriteLn(Format('%s ( Line %d ): %s', [e.Name, TBESEN(JS).LineNumber, e.Message]));
-                  NormVideo;
-                  halt(-1);
-                end;
-                on e: exception do
-                begin
-                  TextColor(LightRed);
-                  WriteLn(Format('%s ( Line %d ): %s', ['Exception', TBESEN(JS).LineNumber, e.Message]));
-                  NormVideo;
-                  halt(-1);
-                end;
-             end;
-           end;
-        except
-           on e: EBESENError do
-           begin
-             WriteLn(Format('%s ( Line %d ): %s', [e.Name, TBESEN(JS).LineNumber, e.Message]));
-             halt(-1);
-           end;
-
-           on e: exception do
-           begin
-             WriteLn(Format('%s ( Line %d ): %s', ['Exception', TBESEN(JS).LineNumber, e.Message]));
-             halt(-1);
-           end;
+        Args[0]:= JSAPI;
+        if JS_IsFunction(ctx,Hook.JSAPI.OnExit) then
+        begin
+          AResult := JS_Call(ctx,Hook.JSAPI.OnExit,Hook.JSAPI.JSHook,Length(Args),@Args);
+          if JS_IsException(AResult) then
+          begin
+            js_std_dump_error(ctx);
+            halt(-1);
+          end;
         end;
-        TBESEN(JS).GarbageCollector.Unprotect(TBESENObject(JSAPI));
-        FreeAndNil(JSAPI);
+        JS_FreeValue(ctx,JSAPI);
       end;
     end;
   end;
@@ -674,72 +610,49 @@ end;
 function CheckAddrHooks(PC : UInt64) : Boolean;
 var
   Hook : THookFunction;
-  a: array[0..2] of PBESENValue;
-  AResult : TBESENValue;
+  AResult : JSValue;
 begin
   Result := False;
 
   if Emulator.Hooks.ByAddr.TryGetValue(PC,Hook) then // Check if Any hook for current addr.
-  if Assigned(JS) and Assigned(Hook.JSHook) and Assigned(Hook.JSHook.OnCallBack) then
+  if Assigned(ctx) and JS_IsObject(Hook.JSAPI.JSHook) and JS_IsFunction(ctx,Hook.JSAPI.OnCallBack) then
   begin
-    try
-       AResult.ValueType := bvtBOOLEAN;
-       if assigned(Hook.JSHook.OnCallBack) then
-       begin
-         try
-            Hook.JSHook.OnCallBack.Call(BESENObjectValue(Hook.JSHook.OnCallBack), @a, 0, AResult);
-         except
-            on e: EBESENError do
-            begin
-              TextColor(LightRed);
-              WriteLn(Format('%s ( Line %d ): %s', [e.Name, TBESEN(JS).LineNumber, e.Message]));
-              NormVideo;
-              halt(-1);
-            end;
-            on e: exception do
-            begin
-              TextColor(LightRed);
-              WriteLn(Format('%s ( Line %d ): %s', ['Exception', TBESEN(JS).LineNumber, e.Message]));
-              NormVideo;
-              halt(-1);
-            end;
-         end;
-       end;
-    except
-       on e: EBESENError do
-       begin
-         WriteLn(Format('%s ( Line %d ): %s', [e.Name, TBESEN(JS).LineNumber, e.Message]));
-         halt(-1);
-       end;
-
-       on e: exception do
-       begin
-         WriteLn(Format('%s ( Line %d ): %s', ['Exception', TBESEN(JS).LineNumber, e.Message]));
-         halt(-1);
-       end;
+    AResult := JS_Call(ctx,Hook.JSAPI.OnCallBack,Hook.JSAPI.JSHook,0,nil);
+    if JS_IsException(AResult) then
+    begin
+      js_std_dump_error(ctx);
+      halt(-1);
     end;
-    if AResult.ValueType = bvtBOOLEAN then
+
+    if JS_IsBool(AResult) then
     begin
       if VerboseEx and (not Emulator.RunOnDll) then
-         Writeln('JS Return : ' ,BoolToStr(Boolean(AResult.Bool),'True','False'));
-
-      Result := Boolean(AResult.Bool);
+      begin
+        Writeln('Address Hook JS Return : ' ,JS_VALUE_GET_BOOL(AResult));
+      end;
+      Result := JS_VALUE_GET_BOOL(AResult);
     end;
   end;
 end;
 
-procedure HookCode(uc: uc_engine; address: UInt64; size: Cardinal; user_data: Pointer); cdecl;
+procedure HookCode(uc: uc_engine; address: UInt64; size: Cardinal; {%H-}user_data: Pointer); cdecl;
 var
-  PC , tmp , esp : UInt64;
+  PC : UInt64;
   code : Array [0..49] of byte; // 50 is huge :P for asm ins .
-  IsAPI : boolean;
+  API : TApiInfo;
+  APIPrintFix : Boolean;
   ins : TZydisDecodedInstruction;
   FixAddr : UInt64;
 begin
-  CheckForSig(); // Check for ^C .
+  //CheckForSig(); // Check for ^C .
 
-  PC := 0;  FixAddr := 0; tmp:= 0; esp := 0;
-  IsAPI := False;
+  PC := 0;  FixAddr := 0;
+  FillChar(API,SizeOf(API),0);
+
+  {
+    TODO: Check if we are on the stack
+        (Prevent or continue) based on user options.
+  }
 
 
   // Get PC (EIP - RIP) .
@@ -782,11 +695,13 @@ begin
   // TODO: add InterActive Commands .
 
   //Emulator.Flags.FLAGS := reg_read_x64(uc,UC_X86_REG_EFLAGS);
-  IsAPI := CheckHook(uc,PC);
+  API := CheckHook(uc,PC);
   // Check if the API has an OnExit CallBack .
-  CheckOnExitCallBack(IsAPI,PC);
+  CheckOnExitCallBack(API.ISAPI,PC);
 
-  if (ShowASM) and (not Emulator.RunOnDll) and (not IsAPI) then
+  APIPrintFix := API.ISAPI and (not API.APIHandled);
+
+  if (ShowASM) and (not APIPrintFix) and (not Emulator.RunOnDll) then
   begin
     Initialize(code);
     FillByte(code,Length(code),0);
@@ -842,8 +757,8 @@ begin
      //rdtsc
     if (code[0] = $F) and (code[1] = $31) then
     begin
-      reg_write_x32(uc,UC_X86_REG_EAX,RandomRange(100,500));
-      reg_write_x32(uc,UC_X86_REG_EDX,$0);
+      reg_write_x32(uc,UC_X86_REG_EAX,RandomRange(100,400));
+      reg_write_x32(uc,UC_X86_REG_EDX,RandomRange(100,400));
 
       if not Emulator.RunOnDll then
          Writeln(Format('rdtsc at 0x%x',[PC]));
@@ -866,7 +781,7 @@ begin
      Steps += 1;
 end;
 
-procedure hook_intr(uc: uc_engine; intno: UInt32; user_data: Pointer); cdecl;
+procedure hook_intr(uc: uc_engine; intno: UInt32; {%H-}user_data: Pointer); cdecl;
 var
   PC : UInt64;
 begin
@@ -907,7 +822,7 @@ begin
   end;
 end;
 
-procedure HookSysCall(uc : uc_engine; UserData : Pointer);
+procedure HookSysCall(uc : uc_engine; {%H-}UserData : Pointer);
 var
   PC,EAX,ESP,V_ESP : UInt64;
 begin
@@ -921,37 +836,37 @@ begin
 
   //TODO: Add JS Global Callback Function.
 
-  //uc_reg_read(uc,ifthen(Emulator.Is_x64,UC_X86_REG_RSP,UC_X86_REG_ESP),@ESP);
-  //V_ESP := ESP;
-  //
-  //Utils.DumpStack(ESP,8);
-  //
-  //if (EAX = $19) then // NtQueryInformationProcess .
-  //begin
-  //  reg_write_x32(uc,UC_X86_REG_EAX,$C0000353);
-  //  Utils.WriteDword(Utils.reg_read_x64(uc,UC_X86_REG_R8),4);
-  //  Utils.DumpStack(Utils.reg_read_x64(uc,UC_X86_REG_R8),2);
-  //end;
-  //
-  //if EAX = $D then // NtSetInformationThread .
-  //begin
-  //  reg_write_x64(uc,UC_X86_REG_RAX,0);
-  //end;
-  //
-  //if EAX = $50 then // NtProtectVirtualMemory .
-  //begin
-  //    reg_write_x64(uc,UC_X86_REG_RAX,0);
-  //end;
+  uc_reg_read(uc,ifthen(Emulator.Is_x64,UC_X86_REG_RSP,UC_X86_REG_ESP),@ESP);
+  V_ESP := ESP;
+
+ // Utils.DumpStack(ESP,8);
+
+  if (EAX = $19) then // NtQueryInformationProcess .
+  begin
+    reg_write_x32(uc,UC_X86_REG_EAX,$C0000353);
+    Utils.WriteDword(Utils.reg_read_x64(uc,UC_X86_REG_R8),4);
+    //Utils.DumpStack(Utils.reg_read_x64(uc,UC_X86_REG_R8),2);
+  end;
+
+  if EAX = $D then // NtSetInformationThread .
+  begin
+    reg_write_x64(uc,UC_X86_REG_RAX,0);
+  end;
+
+  if EAX = $50 then // NtProtectVirtualMemory .
+  begin
+      reg_write_x64(uc,UC_X86_REG_RAX,0);
+  end;
 
   NormVideo;
 end;
 
-procedure HookSysEnter(uc : uc_engine; UserData : Pointer);
+procedure HookSysEnter(uc : uc_engine; {%H-}UserData : Pointer);
 var
   PC,EAX : UInt64;
-  // V_ESP,ESP: Int64;
+  V_ESP,ESP: Int64;
 begin
-  PC := 0; EAX := 0;// V_ESP := 0; ESP := 0;
+  PC := 0; EAX := 0; V_ESP := 0; ESP := 0;
   Emulator.err := uc_reg_read(uc, ifthen(Emulator.Is_x64,UC_X86_REG_RIP,UC_X86_REG_EIP), @PC);
   Emulator.err := uc_reg_read(uc, ifthen(Emulator.Is_x64,UC_X86_REG_RAX,UC_X86_REG_EAX), @EAX);
 
@@ -962,49 +877,46 @@ begin
 
   //TODO: Add JS Global Callback Function.
 
-
   // For VMProtect ..
 
-  //ESP := reg_read_x32(uc,ifthen(Emulator.Is_x64,UC_X86_REG_RSP,UC_X86_REG_ESP));
-  //V_ESP := ESP;
-  //Utils.DumpStack(ESP,8);
-  //
-  //if (EAX = $B5) then // NtQueryInformationProcess
-  //begin
-  //  reg_write_x32(uc,UC_X86_REG_EAX,$C0000353);
-  //  V_ESP := Utils.ReadDword(V_ESP+4*4);
-  //  Utils.WriteDword(V_ESP,4);
-  //  //Utils.WriteDword(V_ESP+4,4);
-  //  Utils.DumpStack(V_ESP,2);
-  //end;
-  //
-  //if EAX = $4C then // NtSetInformationThread .
-  //begin
-  //  //V_ESP := Utils.ReadDword(ESP+4*2);
-  //  //Utils.WriteDword(ESP+4*2,$FFFFFFFD);
-  //  reg_write_x32(uc,UC_X86_REG_EAX,0); // $C0000004
-  //
-  //  //Utils.DumpStack(ESP,8);
-  //  //
-  //end;
-  //
-  //if (EAX = $C8)then // NtProtectVirtualMemory
-  //begin
-  //  Writeln('BaseAddr      = ',IntToHex(Utils.ReadDword(Utils.ReadDword(ESP+4*3)),8));
-  //
-  //  Writeln('NumberOfBytes = ',IntToHex(Utils.ReadDword(Utils.ReadDword(ESP+4*4)),8));
-  //
-  //  reg_write_x32(uc,UC_X86_REG_EAX,0);
-  //end;
+  ESP := reg_read_x32(uc,ifthen(Emulator.Is_x64,UC_X86_REG_RSP,UC_X86_REG_ESP));
+  V_ESP := ESP;
+ // Utils.DumpStack(ESP,8);
+
+  if (EAX = $B5) then // NtQueryInformationProcess
+  begin
+    reg_write_x32(uc,UC_X86_REG_EAX,$C0000353);
+    V_ESP := Utils.ReadDword(V_ESP+4*4);
+    Utils.WriteDword(V_ESP,4);
+    //Utils.WriteDword(V_ESP+4,4);
+    //Utils.DumpStack(V_ESP,2);
+  end;
+
+  if EAX = $4C then // NtSetInformationThread .
+  begin
+    //V_ESP := Utils.ReadDword(ESP+4*2);
+    //Utils.WriteDword(ESP+4*2,$FFFFFFFD);
+    reg_write_x32(uc,UC_X86_REG_EAX,0); // $C0000004
+
+    //Utils.DumpStack(ESP,8);
+    //
+  end;
+
+  if (EAX = $C8)then // NtProtectVirtualMemory
+  begin
+    //writeln('sysenter : NtProtectVirtualMemory');
+    //Writeln('BaseAddr      = ',IntToHex(Utils.ReadDword(Utils.ReadDword(ESP+4*3)),8));
+    //Writeln('NumberOfBytes = ',IntToHex(Utils.ReadDword(Utils.ReadDword(ESP+4*4)),8));
+    //
+    reg_write_x32(uc,UC_X86_REG_EAX,0);
+  end;
 end;
 
 procedure TEmu.SetHooks();
 var
-  trace1, trace2, trace3, trace4, trace5, trace6 , trace7: uc_hook;
+  trace1, {trace2,} trace3, trace4, trace5, trace6 , trace7: uc_hook;
 begin
-  uc_hook_add(uc, trace1, UC_HOOK_MEM_WRITE, @HookMemX86, nil, 1, 0,[]);
   //uc_hook_add(uc, trace2, UC_HOOK_MEM_READ, @HookMemX86, nil, 1, 0,[]);
-
   Emulator.err := uc_hook_add(uc, trace3,
   UC_HOOK_MEM_READ_UNMAPPED or
   UC_HOOK_MEM_WRITE_UNMAPPED or
@@ -1017,7 +929,10 @@ begin
   if Speed then
     Emulator.err := uc_hook_add(uc, trace4, UC_HOOK_BLOCK, @HookCode, nil, 1, 0,[])
   else
+  begin
     Emulator.err := uc_hook_add(uc, trace4, UC_HOOK_CODE, @HookCode, nil, 1, 0,[]);
+    uc_hook_add(uc, trace1, UC_HOOK_MEM_WRITE, @HookMemX86, nil, 1, 0,[]);
+  end;
 
   Emulator.err := uc_hook_add(uc, trace5, UC_HOOK_INTR, @hook_intr, nil, 1, 0,[]);
 
@@ -1040,7 +955,7 @@ begin
 
   if uc_mem_map(uc,img.ImageBase,MapSize,UC_PROT_ALL) = UC_ERR_OK then
   begin
-    Writeln('[√] Alloc Memory for PE in Unicorn @ 0x',hexStr(img.ImageBase,8));
+    Writeln(Format('[√] Alloc Memory for PE in Unicorn @ 0x%x',[img.ImageBase]));
 
     Err := uc_mem_write_(uc,img.ImageBase,MapedPE,PE.Size);
     if Err = UC_ERR_OK then
@@ -1086,15 +1001,28 @@ end;
 
 procedure TEmu.Start();
 var
-  Entry : UInt64 = 0;
   RtlExit : UInt64 = 0;
-  Start, _End, PC : UInt64;
+  Start, _End, PC, RIP : UInt64;
 begin
-  Entry := 0; PC := 0;
+  Entry := 0; PC := 0; Start := 0; _End := 0; RIP := 0;
+
+  // A Temp Context
+  uc_context_alloc(self.uc,self.tContext);
+  if tContext = nil then
+  begin
+    writeln('[X] Error while Allocating CPU Context');
+  end;
+
   SetHooks();
   Writeln('[√] Set Hooks');
   if MapPEtoUC then
   begin
+
+    if not init_segments() then
+    begin
+      Writeln('Can''t init Segments , last Err : ',uc_strerror(err));
+      halt(-1);
+    end;
 
     if load_sys_dll(uc,'ntdll.dll') then    // loaded by Default in Win so we load it first .
     if load_sys_dll(uc,'kernel32.dll') then // second :D but maybe i should put kernelbase.dll ..
@@ -1105,24 +1033,25 @@ begin
       HookImports_Pse(uc,Img,FilePath);
       //HookImports(uc,Img);
 
-      if not init_segments() then
-      begin
-        Writeln('Can''t init Segments , last Err : ',uc_strerror(err));
-        halt(-1);
-      end;
-
       {
           The Order here is Important - first we load all JS API Hooks
           Then init all dlls and TLS then call Entry Point .
       }
+
+
       InstallNativeHooks(); // 0 .
 
-      js.InitJSEmu(); // 1 .
-      js.LoadScript(AnsiString(JSAPI)); // 2 .
 
-      Init_dlls(); // 3 .
+      Emulator.err := uc_reg_read(uc, ifthen(Emulator.Is_x64,UC_X86_REG_RIP,UC_X86_REG_EIP), @RIP);
+      writeln(Format('Before Init - IP : %x',[RIP]));
 
-      InitTLS(uc,Self.Img); // 4 .
+
+      Init_QJS; // 1.
+      InitJSEmu(); // 2.
+      LoadScript(PChar(JSAPI)); // 3 .
+
+      Init_dlls(); // 4 .
+      InitTLS(uc,Self.Img); // 5 .
 
       Writeln();
       TextColor(LightCyan);
@@ -1130,42 +1059,40 @@ begin
       NormVideo;
 
       // initial stack Pointer .
-      r_esp := ((Emulator.stack_base + Emulator.stack_size) - $100);
-      r_esp := r_esp and $FFFFFF00; // align the stack .
+      SP := ((Emulator.stack_base + Emulator.stack_size) - $100);
+      SP := SP and $FFFFFF00; // align the stack .
 
-      err := uc_reg_write(uc, UC_X86_REG_ESP, @r_esp); // ESP .
-      err := uc_reg_write(uc, UC_X86_REG_EBP, @r_esp); // EBP .
+      err := uc_reg_write(uc, UC_X86_REG_ESP, @SP); // ESP .
+      err := uc_reg_write(uc, UC_X86_REG_EBP, @SP); // EBP .
 
-      // Reseting the EFLAGS is important for some caese -
+      // Reseting the EFLAGS is important for some caeses \
       // so { don't Delete it :D }
       ResetEFLAGS();
-
-
-      Entry := img.ImageBase + img.EntryPointRVA;
 
       // to emulate "call edx" :D .. needed in some cases - Don't Delete it .
       uc_reg_write(uc,ifthen(Emulator.isx64,UC_X86_REG_RDX,UC_X86_REG_EDX),@Entry);
 
-      RtlExit := GetProcAddr(GetModulehandle('ntdll.dll'),'RtlExitUserThread');
-      WriteDword(r_esp,RtlExit);
+      RtlExit := GetProcAddr(CmuGetModulehandle('ntdll.dll'),'RtlExitUserThread');
+      WriteDword(SP,RtlExit);
+
+
+      tmpbool := 0; // tmp_fix: this is important for "xor" shellcodes near IP.
+
+      Entry := img.ImageBase + img.EntryPointRVA;
+
+      Emulator.err := uc_reg_read(uc, ifthen(Emulator.Is_x64,UC_X86_REG_RIP,UC_X86_REG_EIP), @RIP);
+      writeln(Format('IP : %x',[RIP]));
+      if RIP <> 0 then
+        Entry := RIP;
 
       Start := GetTickCount64;
-      //while true do
-      //begin
-        tmpbool := 0; // this is important for xor shellcodes
 
-        if isShellCode then
-        err := uc_emu_start(uc,Entry,
-            img.ImageBase + img.EntryPointRVA + SCode.Size,0,0)
-        else
-        err := uc_emu_start(uc,Entry,
-            img.ImageBase + img.SizeOfImage,0,0);
-        //if Emulator.err = UC_ERR_OK then
-        //   Break;
-
-        //uc_reg_read(uc, ifthen(Emulator.Is_x64,UC_X86_REG_RIP,UC_X86_REG_EIP), @PC);
-        //Entry := PC;
-      //end;
+      if isShellCode then
+      err := uc_emu_start(uc,Entry,
+          img.ImageBase + img.EntryPointRVA + SCode.Size,0,0)
+      else
+      err := uc_emu_start(uc,Entry,
+          img.ImageBase + img.SizeOfImage,0,0);
 
       _End := GetTickCount64;
     end;
@@ -1182,6 +1109,16 @@ begin
 
   Writeln();
   Writeln('Cmulator Stop >> last Error : ',uc_strerror(err));
+end;
+
+function TEmu.SaveCPUState: Boolean;
+begin
+  Result := uc_context_save(Self.uc,self.tContext) = UC_ERR_OK;
+end;
+
+function TEmu.RestoreCPUState: Boolean;
+begin
+  Result := uc_context_restore(Self.uc,self.tContext) = UC_ERR_OK;
 end;
 
 function TEmu.GetGDT(index : Integer): Pointer;
@@ -1205,7 +1142,7 @@ begin
   stack_base := $200000;
   stack_size := $60000;
   stack_limit := stack_base - stack_size;
-  r_esp := ((stack_base + stack_size) - $70); // initial stack Pointer .
+  SP := ((stack_base + stack_size) - $70); // initial stack Pointer .
 
   gs_address := 0;
 
@@ -1256,9 +1193,9 @@ begin
 
   Init_Descriptor(GetGDT(14),0,$fffff000,true);      // code segment .
   Init_Descriptor(GetGDT(15),0,$fffff000,false);     // data segment .
-  Init_Descriptor(GetGDT(16),fs_address,$fff,false); // one page data segment simulate fs
+  Init_Descriptor(GetGDT(16),fs_address,$fff,false); // one page data segment simulate fs | gs
   Init_Descriptor(GetGDT(17),0,$fffff000,false);     // ring 0 data
-  {%H-}PSegmentDescriptor(GetGDT(17))^.dpl := 0;     // set descriptor privilege level .
+  PSegmentDescriptor(GetGDT(17))^.dpl := 0;     // set descriptor privilege level .
 
   // TODO: remove it after implementing Mem Manager.
   tmp := $40000000;
@@ -1282,7 +1219,7 @@ begin
           if err = UC_ERR_OK then
           begin
             begin
-              err := uc_reg_write(uc, UC_X86_REG_ESP, @r_esp);
+              err := uc_reg_write(uc, UC_X86_REG_ESP, @SP);
               if err = UC_ERR_OK then
               begin
                 err := uc_reg_write(uc, UC_X86_REG_SS, @r_ss);
@@ -1331,6 +1268,12 @@ begin
         end;
       end;
     end;
+  end
+  else
+  begin
+    TextColor(LightRed);
+    Writeln(Format('Can''t Map Stack to Unicorn, Error : %s',[uc_strerror(err)]));
+    NormVideo;
   end;
   Writeln();
 end;
@@ -1352,25 +1295,28 @@ begin
        Redirect.first := string(item.S['red.F']);
        Redirect.last  := string(item.S['red.L']);
        Redirect.count := item.I['count'];
-       name := SplitReg(string(LowerCase(item.S['name'])));
+       name := string(LowerCase(item.S['name']));
+
        ApiSetSchema.AddOrSetValue(name,Redirect);
+       ApiSetSchema.AddOrSetValue(SplitReg(string(LowerCase(item.S['name']))),Redirect);
      end;
 
      for item in APIS['WIN10_APIS'] do
      begin
-       Redirect.first := string(item.S['red[0]']);
-       Redirect.last  := string(item.S['red[1]']);
-       Redirect.count := item.I['count'];
-       Redirect.&alias := string(item.S['alias']);
-       name := SplitReg(string(LowerCase(item.S['name'])));
+       Redirect.first  := string(item.S['red[0]']);
+       Redirect.last   := string(item.S['red[1]']);
+       Redirect.count  := item.I['count'];
+       Redirect._alias := string(item.S['alias']);
+       name := string(LowerCase(item.S['name']));
        ApiSetSchema.AddOrSetValue(name,Redirect);
+       ApiSetSchema.AddOrSetValue(SplitReg(string(LowerCase(item.S['name']))),Redirect);
      end;
   finally
     JSON.Free;
   end;
 end;
 
-constructor TEmu.Create(_FilePath : string; _ShellCode, SCx64 : Boolean);
+constructor TEmu.Create(_FilePath: string; _Shellcode, SCx64: Boolean);
 begin
   // Until Unicorn Engine fix it :D
   MemFix := TStack<UInt64>.Create;
@@ -1434,7 +1380,7 @@ begin
       // Set Dll Base loading ...
       if Is_x64 then
       begin
-        Self.DLL_BASE_LOAD := $0000000070000000;// $000007FEE0000000;
+        Self.DLL_BASE_LOAD := $0000000700000000;
       end
       else
       begin
@@ -1444,7 +1390,6 @@ begin
     end
     else
     begin
-      IsSC := true;
       Writeln('Error While Loading : "',FilePath,'" not a valid PE File');
       halt(-1);
     end;
@@ -1512,8 +1457,9 @@ begin
     FreeAndNil(ApiSetSchema);
   end;
 
+  Uninit_JSEngine;
+
   inherited Destroy;
 end;
 
 end.
-

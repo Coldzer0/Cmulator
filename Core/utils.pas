@@ -4,13 +4,11 @@ unit Utils;
 interface
 
 uses
-  Classes, SysUtils,strutils,LazFileUtils,RegExpr,
+  {$IfDef MSWINDOWS}windows,{$EndIf}
+  Classes, SysUtils,strutils,RegExpr,
   Unicorn_dyn, UnicornConst, X86Const,
-  {$i besenunits.inc},
   Zydis,
-  Zydis.Exception,
   Zydis.Decoder,
-  Zydis.Formatter,
   xxHash;
 
 type
@@ -28,7 +26,7 @@ function DisAsm(code : Pointer; Addr : UInt64; Size : UInt32) : TZydisDecodedIns
 
 
 // Emulator JS Wrappers .
-function GetModulehandle(Module : String) : UInt64;
+function CmuGetModulehandle(Module : String) : UInt64;
 function GetProcAddr(Handle : UInt64; FnName : String): UInt64;
 function push(value : UInt64): Boolean;
 function pop(): UInt64;
@@ -53,17 +51,72 @@ function ReadQword(Addr : UInt64) : Int64;
 
 function isprint(const AC: AnsiChar): boolean;
 
+function ExtractFileNameWithoutExt(const AFilename: string): string;
+
 function GetFullPath(name : string) : UnicodeString;
 function GetDllFromApiSet(name : string): UnicodeString;
 function SplitReg(Str : string) : string;
+
+procedure TextColor(Color : Byte);
+procedure NormVideo;
 
 const
   UC_PAGE_SIZE  = $1000;
   EM_IMAGE_BASE = $400000;
 
+// Console Colors
+  LightRed     = 1;
+  LightMagenta = 2;
+  Yellow       = 3;
+  LightCyan    = 4;
+  Magenta      = 5;
+  LightBlue    = 6;
+
 implementation
    uses
      Globals,math,FnHook,Emu;
+
+
+function ExtractFileNameWithoutExt(const AFilename: string): string;
+var
+ p: Integer;
+begin
+ Result:=AFilename;
+ p:=length(Result);
+ while (p>0) do begin
+   case Result[p] of
+     PathDelim: exit;
+     {$ifdef windows}
+     '/': if ('/' in AllowDirectorySeparators) then exit;
+     {$endif}
+     '.': exit(copy(Result,1, p-1));
+   end;
+   dec(p);
+ end;
+end;
+
+// Taken from Besen Engine.
+function UTF32CharToUTF8(u4c:LongWord):AnsiString;
+begin
+if u4c<=$7f then begin
+ result:=ansichar(byte(u4c));
+end else if u4c<=$7ff then begin
+ result:=ansichar(byte($c0 or ((u4c shr 6) and $1f)))+ansichar(byte($80 or (u4c and $3f)));
+end else if u4c<=$ffff then begin
+ result:=ansichar(byte($e0 or ((u4c shr 12) and $0f)))+ansichar(byte($80 or ((u4c shr 6) and $3f)))+ansichar(byte($80 or (u4c and $3f)));
+end else if u4c<=$1fffff then begin
+ result:=ansichar(byte($f0 or ((u4c shr 18) and $07)))+ansichar(byte($80 or ((u4c shr 12) and $3f)))+ansichar(byte($80 or ((u4c shr 6) and $3f)))+ansichar(byte($80 or (u4c and $3f)));
+{$ifndef strictutf8}
+end else if u4c<=$3ffffff then begin
+ result:=ansichar(byte($f8 or ((u4c shr 24) and $03)))+ansichar(byte($80 or ((u4c shr 18) and $3f)))+ansichar(byte($80 or ((u4c shr 12) and $3f)))+ansichar(byte($80 or ((u4c shr 6) and $3f)))+ansichar(byte($80 or (u4c and $3f)));
+end else if u4c<=$7fffffff then begin
+ result:=ansichar(byte($fc or ((u4c shr 30) and $01)))+ansichar(byte($80 or ((u4c shr 24) and $3f)))+ansichar(byte($80 or ((u4c shr 18) and $3f)))+ansichar(byte($80 or ((u4c shr 12) and $3f)))+ansichar(byte($80 or ((u4c shr 6) and $3f)))+ansichar(byte($80 or (u4c and $3f)));
+{$endif}
+end else begin
+ u4c:=$fffd;
+ result:=ansichar(byte($e0 or ((u4c shr 12) and $0f)))+ansichar(byte($80 or ((u4c shr 6) and $3f)))+ansichar(byte($80 or (u4c and $3f)));
+end;
+end;
 
 function isprint(const AC: AnsiChar): boolean;
 begin
@@ -74,6 +127,7 @@ function IsStringPrintable( Str : String): Boolean;
 var
   i : Integer;
 begin
+  Result := False;
   for i := 1 to Length(Str) do
   begin
     if not isprint(Str[i]) then
@@ -97,7 +151,7 @@ function SplitReg(Str : string) : string;
 var
   re : TRegExpr;
 begin
-  Result := '';
+  Result := Str;
   re := TRegExpr.Create('^.*-l\d');
   if re.Exec(Str) then
   begin
@@ -114,8 +168,11 @@ var
   Dll : string;
   Path : UnicodeString;
 begin
-  Result := UnicodeString(SplitReg(name));
-  Dll := ExtractFileNameWithoutExt(ExtractFileName(SplitReg(name)));
+  Result := UnicodeString(name);
+
+  Dll := ExtractFileNameWithoutExt(ExtractFileName(name));
+  if not Emulator.ApiSetSchema.ContainsKey(Dll) then
+     Dll := ExtractFileNameWithoutExt(ExtractFileName(SplitReg(name)));
 
   if Emulator.ApiSetSchema.ContainsKey(Dll) then
   begin
@@ -123,17 +180,17 @@ begin
     if API.count = 2 then
     begin
       Path := GetFullPath(API.last);
-      if FileExistsUTF8(string(Path)) then
+      if FileExists(string(Path)) then
          Result := Path
       else
       begin
-        Path := GetFullPath(API.&alias);
-        if FileExistsUTF8(string(Path)) then
+        Path := GetFullPath(API._alias);
+        if FileExists(string(Path)) then
            Result := Path
         else
         begin
           Path := GetFullPath(API.first);
-          if FileExistsUTF8(string(Path)) then
+          if FileExists(string(Path)) then
              Result := Path
           else
           begin
@@ -146,7 +203,7 @@ begin
     else
     begin
       Path := GetFullPath(API.first);
-      if FileExistsUTF8(string(Path)) then
+      if FileExists(string(Path)) then
          Result := Path
       else
       begin
@@ -170,7 +227,7 @@ begin
   if len = 0 then len := MAX_LEN; // Set Max len if not set :V ..
   repeat
    Emulator.err := uc_mem_read_(Emulator.uc,Addr,@ch,2);
-   Result += BESENUTF32CharToUTF8(ch);
+   Result += UTF32CharToUTF8(ch);
    inc(count);
    inc(Addr,2);
   until (ch = 0) or (count >= len);
@@ -209,7 +266,6 @@ begin
   begin
     ch := Ord(Str[i]);
     Emulator.err := uc_mem_write_(Emulator.uc,Addr,@ch,1);
-
     // if Error then return with written len .
     if Emulator.err <> UC_ERR_OK then break;
 
@@ -271,6 +327,7 @@ end;
 
 function ReadMem(Addr : UInt64; len : UInt32) : TArray;
 begin
+  Initialize(Result);
   SetLength(Result,len);
   Emulator.err := uc_mem_read_(Emulator.uc,Addr,@Result,len);
 end;
@@ -334,7 +391,7 @@ begin
   end;
 end;
 
-function GetModulehandle(Module : String) : UInt64;
+function CmuGetModulehandle(Module : String) : UInt64;
 var
   Lib : TNewDll;
 begin
@@ -359,6 +416,9 @@ begin
     if lib.BaseAddress = Handle then
     begin
       hash := xxHash64Calc(LowerCase(ExtractFileNameWithoutExt(ExtractFileName(lib.Dllname))) + '.' + FnName);
+
+      //lib.FnByOrdinal;
+
       if lib.FnByName.TryGetValue(Hash,API) then
       begin
         Result := API.VAddress;
@@ -374,10 +434,11 @@ var
 begin
   Initialize(Result);
   try
-    if (ZydisGetVersion <> ZYDIS_VERSION) then
-    begin
-      raise Exception.Create('Invalid Zydis version');
-    end;
+    // TODO: update Zydis on windows, then remove comments.
+    //if (ZydisGetVersion <> ZYDIS_VERSION) then
+    //begin
+    //  raise Exception.Create('Invalid Zydis version');
+    //end;
 
     if Emulator.isx64 then
       Decoder := Zydis.Decoder.TZydisDecoder.Create(ZYDIS_MACHINE_MODE_LONG_64,ZYDIS_ADDRESS_WIDTH_64)
@@ -459,6 +520,7 @@ var
 begin
   if Emulator.RunOnDll then Exit;
   Writeln(#10'================================ Hex Dump ====================================');
+  Writeln('           0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F');
   max := len + ifthen(Boolean(len mod COLS), (COLS - len mod COLS) , 0) - 1;
   for i := 0 to max do
   begin
@@ -498,5 +560,67 @@ begin
   Writeln('=============================================================================='#10);
 end;
 
-end.
+{$IfDef MSWINDOWS}
+var
+  OriginalConsole : WORD = 15;
+{$EndIf}
+procedure TextColor(Color : Byte);
+{$IfDef MSWINDOWS}
+var
+  Info : CONSOLE_SCREEN_BUFFER_INFO;
+{$EndIf}
+begin
+  {$IfDef MSWINDOWS}
+  GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE),@Info);
+  OriginalConsole := Info.wAttributes;
+  {$EndIf}
+  case Color of
+    LightRed :
+      {$IfDef unix}
+      Write(#27'[1;31m');
+      {$Else}
+      SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),12);
+      {$EndIf}
+    LightMagenta :
+      {$IfDef unix}
+      Write(#27'[1;35m');
+      {$Else}
+      SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),13);
+      {$EndIf}
+    Magenta :
+      {$IfDef unix}
+      Write(#27'[3;35m');
+      {$Else}
+      SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),5);
+      {$EndIf}
+    Yellow :
+      {$IfDef unix}
+      Write(#27'[1;33m');
+      {$Else}
+      SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),14);
+      {$EndIf}
+    LightCyan :
+      {$IfDef unix}
+      Write(#27'[1;36m');
+      {$Else}
+      SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),11);
+      {$EndIf}
+    LightBlue :
+      {$IfDef unix}
+      Write(#27'[1;34m');
+      {$Else}
+      SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),9);
+      {$EndIf}
+  end;
+end;
 
+procedure NormVideo;
+begin
+  {$IfDef unix}
+  Write(#27'[0m');
+  {$Else}
+  SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),OriginalConsole);
+  {$EndIf}
+end;
+
+end.

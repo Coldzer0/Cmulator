@@ -6,9 +6,8 @@ interface
 
 uses
   Classes, SysUtils,
-  Unicorn_dyn , UnicornConst, X86Const,
-  Generics.Collections,
-  {$I besenunits.inc},JSPlugins_BEngine;
+  Unicorn_dyn,Generics.Collections,
+  quickjs;
 
 type
 
@@ -40,13 +39,15 @@ type
     IsOrdinal : Boolean;
     API : TLibFunction;
     NativeCallBack : Pointer;
-    JSHook : TNewHook;
+    JSAPI : record
+      JSHook, OnCallBack, OnExit : JSValue;
+    end;
     class function Create(
           FLibName, FnName : string;
           FOrdinal : UInt32;
-          FIsOrdinal : Boolean = False;
-          NCallBack : Pointer = nil; // Native Callback - next version .
-          FJSHook : TNewHook = nil) : THookFunction; static;
+          FIsOrdinal : Boolean;
+          NCallBack : Pointer; // Native Callback - next version .
+          FJSHook, OnCallBack, OnExit : JSValue) : THookFunction; static;
   end;
 
 
@@ -64,8 +65,6 @@ type
 
     { i don't remember why i put this variable here :V }
     //MemPtr       : PQWord; // use PQWORD instead of Pointer just in case someone compile to x32 .
-
-    // < FnAddress, HookSetting >
 
     FnByAddr    : TFastHashMap<UInt64, TLibFunction>;
     FnByOrdinal : TFastHashMap<UInt64, TLibFunction>;
@@ -85,18 +84,21 @@ implementation
 class function THookFunction.Create(
           FLibName, FnName : string;
           FOrdinal : UInt32;
-          FIsOrdinal : Boolean = False;
-          NCallBack : Pointer = nil; // Native Callback - next version .
-          FJSHook : TNewHook = nil) : THookFunction;
+          FIsOrdinal : Boolean;
+          NCallBack : Pointer; // Native Callback - next version .
+          FJSHook, OnCallBack, OnExit : JSValue) : THookFunction;
 begin
+  Initialize(Result);
   FillChar(Result, sizeof(Result), 0);
 
-  Result.LibName        := FLibName;
-  Result.FuncName       := FnName;
-  Result.IsOrdinal      := FIsOrdinal;
-  Result.ordinal        := FOrdinal;
-  Result.JSHook         := FJSHook;
-  Result.nativeCallBack := NCallBack;
+  Result.LibName          := FLibName;
+  Result.FuncName         := FnName;
+  Result.IsOrdinal        := FIsOrdinal;
+  Result.ordinal          := FOrdinal;
+  Result.JSAPI.JSHook     := FJSHook;
+  Result.JSAPI.OnCallBack := OnCallBack;
+  Result.JSAPI.OnExit     := OnExit;
+  Result.nativeCallBack   := NCallBack;
 end;
 
 class function TLibFunction.Create(
@@ -107,6 +109,7 @@ class function TLibFunction.Create(
             FIsForwarder, IsOrdinal : Boolean;
             FWName : string): TLibFunction;
 begin
+  Initialize(Result);
   FillChar(Result, sizeof(Result), 0);
 
   Result.Hits           := 0;
@@ -127,6 +130,7 @@ class function TNewDll.Create(EntryPoint : UInt64; const LibName : string; FBase
                    ByOrdinal : TFastHashMap<UInt64, TLibFunction>;
                    ByName : TFastHashMap<UInt64, TLibFunction>): TNewDll; static;
 begin
+  Initialize(Result);
   FillChar(Result, sizeof(Result), 0);
 
   Result.EntryPoint  := EntryPoint;

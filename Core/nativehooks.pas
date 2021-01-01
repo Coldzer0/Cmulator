@@ -5,8 +5,9 @@ unit NativeHooks;
 interface
 
 uses
-  Classes, SysUtils, Crt ,JSEmuObj,FnHook,Emu,math,
-  Unicorn_dyn , UnicornConst, X86Const, xxHash;
+  Classes, SysUtils, JSEmuObj, FnHook, Emu, math,
+  Unicorn_dyn , UnicornConst, X86Const, xxHash,
+  quickjs;
 
 
 procedure InstallNativeHooks();
@@ -15,7 +16,7 @@ implementation
   uses
     Globals,Utils,TEP_PEB;
 
-function NtContinue( uc : uc_engine; Address , ret : UInt64 ) : Boolean; stdcall;
+function NtContinue(uc : uc_engine; Address , ret : UInt64 ) : Boolean; stdcall;
 var
   ExceptionRec : UInt64 = 0;
   Context      : UInt64 = 0;
@@ -69,7 +70,7 @@ end;
 procedure InstallNativeHooks();
 begin
   Emulator.Hooks.ByName.AddOrSetValue(xxHash64Calc('ntdll.NtContinue'),THookFunction.Create(
-   'ntdll','NtContinue',0,False,@NtContinue,nil));
+   'ntdll','NtContinue',0,False,@NtContinue,JS_UNDEFINED,JS_UNDEFINED,JS_UNDEFINED));
 end;
 
 end.

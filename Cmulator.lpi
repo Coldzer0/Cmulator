@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <ProjectOptions>
-    <Version Value="11"/>
+    <Version Value="12"/>
     <General>
       <Flags>
         <MainUnitHasCreateFormStatements Value="False"/>
         <MainUnitHasTitleStatement Value="False"/>
         <MainUnitHasScaledStatement Value="False"/>
+        <CompatibilityMode Value="True"/>
       </Flags>
       <SessionStorage Value="InProjectDir"/>
-      <MainUnit Value="0"/>
       <Title Value="Cmulator"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
@@ -17,50 +17,9 @@
     <MacroValues Count="1">
       <Macro1 Name="LCLWidgetType" Value="nogui"/>
     </MacroValues>
-    <BuildModes Count="8">
-      <Item1 Name="Debug_linux" Default="True"/>
-      <Item2 Name="Release_linux">
-        <MacroValues Count="1">
-          <Macro1 Name="LCLWidgetType" Value="nogui"/>
-        </MacroValues>
-        <CompilerOptions>
-          <Version Value="11"/>
-          <Target>
-            <Filename Value="Build/linux/Cmulator"/>
-          </Target>
-          <SearchPaths>
-            <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON;Build/libraries/linux"/>
-            <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
-          </SearchPaths>
-          <Parsing>
-            <SyntaxOptions>
-              <SyntaxMode Value="Delphi"/>
-              <CStyleMacros Value="True"/>
-            </SyntaxOptions>
-          </Parsing>
-          <CodeGeneration>
-            <SmartLinkUnit Value="True"/>
-            <TargetCPU Value="x86_64"/>
-            <TargetOS Value="linux"/>
-            <Optimizations>
-              <OptimizationLevel Value="3"/>
-            </Optimizations>
-          </CodeGeneration>
-          <Linking>
-            <Debugging>
-              <GenerateDebugInfo Value="False"/>
-            </Debugging>
-            <LinkSmart Value="True"/>
-          </Linking>
-          <Other>
-            <ConfigFile>
-              <ConfigFilePath Value="/sw/etc/fpc.cfg"/>
-            </ConfigFile>
-          </Other>
-        </CompilerOptions>
-      </Item2>
-      <Item3 Name="OSX_Release">
+    <BuildModes Count="4">
+      <Item1 Name="OSX_Debug" Default="True"/>
+      <Item2 Name="OSX_Release">
         <MacroValues Count="1">
           <Macro1 Name="LCLWidgetType" Value="nogui"/>
         </MacroValues>
@@ -71,7 +30,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/generics_collections/src;Core/unicorn;Core/process;Core/Zydis;Core/GUI;Core/JSON;Build/libraries/osx"/>
+            <OtherUnitFiles Value="Core;Core/QJS;Core/PE;Core/pesp;Core/Crypto;Core/generics_collections/src;Core/unicorn;Core/process;Core/Zydis;Core/GUI;Core/JSON;Build/libraries/osx;Build/libraries/win64"/>
             <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
@@ -93,98 +52,25 @@
             </Debugging>
             <LinkSmart Value="True"/>
           </Linking>
+          <Other>
+            <CompilerMessages>
+              <IgnoredMessages idx3250="True"/>
+            </CompilerMessages>
+          </Other>
         </CompilerOptions>
-      </Item3>
-      <Item4 Name="OSX_Debug">
+      </Item2>
+      <Item3 Name="WIN32_Debug">
         <MacroValues Count="1">
           <Macro1 Name="LCLWidgetType" Value="nogui"/>
         </MacroValues>
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="Build/OSX/Cmulator"/>
+            <Filename Value="Build/win/32/Cmulator.exe"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON;Build/libraries/osx"/>
-            <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
-          </SearchPaths>
-          <Parsing>
-            <SyntaxOptions>
-              <SyntaxMode Value="Delphi"/>
-              <CStyleMacros Value="True"/>
-            </SyntaxOptions>
-          </Parsing>
-          <CodeGeneration>
-            <SmartLinkUnit Value="True"/>
-            <Optimizations>
-              <OptimizationLevel Value="0"/>
-            </Optimizations>
-          </CodeGeneration>
-          <Linking>
-            <Debugging>
-              <DebugInfoType Value="dsDwarf3"/>
-              <UseHeaptrc Value="True"/>
-              <TrashVariables Value="True"/>
-              <UseExternalDbgSyms Value="True"/>
-            </Debugging>
-            <LinkSmart Value="True"/>
-          </Linking>
-        </CompilerOptions>
-      </Item4>
-      <Item5 Name="Debug_windows_x32">
-        <MacroValues Count="1">
-          <Macro1 Name="LCLWidgetType" Value="nogui"/>
-        </MacroValues>
-        <CompilerOptions>
-          <Version Value="11"/>
-          <Target>
-            <Filename Value="Build/win/32/Cmulator"/>
-          </Target>
-          <SearchPaths>
-            <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON;Build/libraries/win64"/>
-            <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
-          </SearchPaths>
-          <Parsing>
-            <SyntaxOptions>
-              <SyntaxMode Value="Delphi"/>
-              <IncludeAssertionCode Value="True"/>
-              <CStyleMacros Value="True"/>
-            </SyntaxOptions>
-          </Parsing>
-          <CodeGeneration>
-            <Checks>
-              <IOChecks Value="True"/>
-              <RangeChecks Value="True"/>
-              <OverflowChecks Value="True"/>
-              <StackChecks Value="True"/>
-            </Checks>
-            <VerifyObjMethodCallValidity Value="True"/>
-            <TargetCPU Value="x86_64"/>
-          </CodeGeneration>
-          <Linking>
-            <Debugging>
-              <DebugInfoType Value="dsDwarf2Set"/>
-              <UseHeaptrc Value="True"/>
-              <TrashVariables Value="True"/>
-              <UseExternalDbgSyms Value="True"/>
-            </Debugging>
-          </Linking>
-        </CompilerOptions>
-      </Item5>
-      <Item6 Name="Release_windows_x32">
-        <MacroValues Count="1">
-          <Macro1 Name="LCLWidgetType" Value="nogui"/>
-        </MacroValues>
-        <CompilerOptions>
-          <Version Value="11"/>
-          <Target>
-            <Filename Value="Build/win/32/Cmulator"/>
-          </Target>
-          <SearchPaths>
-            <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON;Build/libraries/win32"/>
+            <OtherUnitFiles Value="Core;Core/QJS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON;Build/libraries/win32"/>
             <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
@@ -197,48 +83,6 @@
             <SmartLinkUnit Value="True"/>
             <TargetCPU Value="i386"/>
             <TargetOS Value="win32"/>
-            <Optimizations>
-              <OptimizationLevel Value="3"/>
-            </Optimizations>
-          </CodeGeneration>
-          <Linking>
-            <Debugging>
-              <GenerateDebugInfo Value="False"/>
-            </Debugging>
-            <LinkSmart Value="True"/>
-          </Linking>
-        </CompilerOptions>
-      </Item6>
-      <Item7 Name="Debug_windows_x64">
-        <MacroValues Count="1">
-          <Macro1 Name="LCLWidgetType" Value="nogui"/>
-        </MacroValues>
-        <CompilerOptions>
-          <Version Value="11"/>
-          <Target>
-            <Filename Value="Build/win/32/Cmulator"/>
-          </Target>
-          <SearchPaths>
-            <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON;Build/libraries/win64"/>
-            <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
-          </SearchPaths>
-          <Parsing>
-            <SyntaxOptions>
-              <SyntaxMode Value="Delphi"/>
-              <IncludeAssertionCode Value="True"/>
-              <CStyleMacros Value="True"/>
-            </SyntaxOptions>
-          </Parsing>
-          <CodeGeneration>
-            <Checks>
-              <IOChecks Value="True"/>
-              <RangeChecks Value="True"/>
-              <OverflowChecks Value="True"/>
-              <StackChecks Value="True"/>
-            </Checks>
-            <VerifyObjMethodCallValidity Value="True"/>
-            <TargetCPU Value="x86_64"/>
           </CodeGeneration>
           <Linking>
             <Debugging>
@@ -247,21 +91,22 @@
               <TrashVariables Value="True"/>
               <UseExternalDbgSyms Value="True"/>
             </Debugging>
+            <LinkSmart Value="True"/>
           </Linking>
         </CompilerOptions>
-      </Item7>
-      <Item8 Name="Release_windows_x64">
+      </Item3>
+      <Item4 Name="WIN64_Debug">
         <MacroValues Count="1">
           <Macro1 Name="LCLWidgetType" Value="nogui"/>
         </MacroValues>
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="Build/win/64/Cmulator"/>
+            <Filename Value="Build/win/64/Cmulator.exe"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON;Build/libraries/win64"/>
+            <OtherUnitFiles Value="Core;Core/QJS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON;Build/libraries/win64"/>
             <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
@@ -273,22 +118,22 @@
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
             <TargetCPU Value="x86_64"/>
-            <TargetOS Value="win64"/>
-            <Optimizations>
-              <OptimizationLevel Value="3"/>
-            </Optimizations>
           </CodeGeneration>
           <Linking>
             <Debugging>
-              <GenerateDebugInfo Value="False"/>
+              <UseHeaptrc Value="True"/>
+              <TrashVariables Value="True"/>
+              <UseExternalDbgSyms Value="True"/>
             </Debugging>
             <LinkSmart Value="True"/>
           </Linking>
         </CompilerOptions>
-      </Item8>
-      <SharedMatrixOptions Count="2">
-        <Item1 ID="917770631570" Modes="Debug_linux,Release_linux,OSX_Release,OSX_Debug,Debug_windows_x32,Release_windows_x32,Debug_windows_x64,Release_windows_x64" Type="IDEMacro" MacroName="LCLWidgetType" Value="nogui"/>
-        <Item2 ID="741569211698" Modes="Release_linux" Value="-st"/>
+      </Item4>
+      <SharedMatrixOptions Count="4">
+        <Item1 ID="917770631570" Modes="OSX_Release,OSX_Debug,WIN32_Debug,WIN64_Debug" Type="IDEMacro" MacroName="LCLWidgetType" Value="nogui"/>
+        <Item2 ID="741569211698" Value="-st"/>
+        <Item3 ID="500090486552" Modes="OSX_Release" Value="-dRelease"/>
+        <Item4 ID="881584067448" Value="-Xe"/>
       </SharedMatrixOptions>
     </BuildModes>
     <PublishOptions>
@@ -296,22 +141,17 @@
     </PublishOptions>
     <RunParams>
       <local>
-        <CommandLineParams Value="-f ../../samples/AntiDebugDownloader.exe"/>
+        <CommandLineParams Value="-f C:/Windows/System32/cmd.exe -q"/>
       </local>
       <FormatVersion Value="2"/>
       <Modes Count="1">
         <Mode0 Name="default">
           <local>
-            <CommandLineParams Value="-f ../../samples/AntiDebugDownloader.exe"/>
+            <CommandLineParams Value="-f C:/Windows/System32/cmd.exe -q"/>
           </local>
         </Mode0>
       </Modes>
     </RunParams>
-    <RequiredPackages Count="1">
-      <Item1>
-        <PackageName Value="LazUtils"/>
-      </Item1>
-    </RequiredPackages>
     <Units Count="16">
       <Unit0>
         <Filename Value="Cmulator.pas"/>
@@ -356,50 +196,50 @@
         <UnitName Value="Globals"/>
       </Unit8>
       <Unit9>
-        <Filename Value="Core/jsplugins_bengine.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="JSPlugins_BEngine"/>
-      </Unit9>
-      <Unit10>
         <Filename Value="Core/memmanager.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="MemManager"/>
-      </Unit10>
-      <Unit11>
+      </Unit9>
+      <Unit10>
         <Filename Value="Core/tep_peb.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="TEP_PEB"/>
-      </Unit11>
-      <Unit12>
+      </Unit10>
+      <Unit11>
         <Filename Value="Core/process/ethreads.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="EThreads"/>
-      </Unit12>
-      <Unit13>
+      </Unit11>
+      <Unit12>
         <Filename Value="Core/GUI/gui.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="GUI"/>
-      </Unit13>
-      <Unit14>
+      </Unit12>
+      <Unit13>
         <Filename Value="Core/interactive.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Interactive"/>
-      </Unit14>
-      <Unit15>
+      </Unit13>
+      <Unit14>
         <Filename Value="Core/nativehooks.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="NativeHooks"/>
+      </Unit14>
+      <Unit15>
+        <Filename Value="memmanager.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="MemManager"/>
       </Unit15>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
     <Target>
-      <Filename Value="Build/linux/Cmulator"/>
+      <Filename Value="Build/OSX/Cmulator"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="Core;Core/JS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON"/>
+      <OtherUnitFiles Value="Core;Core/QJS;Core/PE;Core/pesp;Core/Crypto;Core/unicorn;Core/Zydis;Core/generics_collections/src;Core/process;Core/GUI;Core/JSON;Build/libraries/osx"/>
       <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>
@@ -410,10 +250,10 @@
     </Parsing>
     <CodeGeneration>
       <SmartLinkUnit Value="True"/>
-      <TargetCPU Value="x86_64"/>
     </CodeGeneration>
     <Linking>
       <Debugging>
+        <DebugInfoType Value="dsDwarf2Set"/>
         <UseHeaptrc Value="True"/>
         <TrashVariables Value="True"/>
         <UseExternalDbgSyms Value="True"/>
