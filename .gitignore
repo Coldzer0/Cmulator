@@ -53,3 +53,4 @@ win_dlls
 Build/OSX
 Build/linux
 Build/win
+*.so
