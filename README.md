@@ -8,6 +8,9 @@ Cmulator  is ( x86 - x64 ) <br>Scriptable Reverse Engineering Sandbox Emulator f
 Based on Unicorn & Capstone Engine & javascript .
 </b>
 
+### 💬 This is the last supported Pascal version and new code base (C/C++) will be in here [Cmulator](https://github.com/Cmulator/Cmulator).
+
+
 ## Supported Architectures:
 * i386
 * x86-64
