@@ -278,6 +278,9 @@
 {name:"api-ms-win-downlevel-version-l1-1-0", count:1, red: ["kernelbase.dll"]},
 {name:"api-ms-win-dwmapi-l1-1-0", count:1, red: ["dwmapi.dll"]},
 {name:"api-ms-win-dx-d3dkmt-l1-1-4", count:1, red: ["gdi32.dll"]},
+
+{name:"ext-ms-win-dx-d3dkmt-dxcore-l1-1-0", count:1, red: ["dxcore.dll"]},
+
 {name:"api-ms-win-eventing-classicprovider-l1-1-0", count:1, red: ["kernelbase.dll"]},
 {name:"api-ms-win-eventing-consumer-l1-1-1", count:1, red: ["sechost.dll"]},
 {name:"api-ms-win-eventing-controller-l1-1-0", count:1, red: ["sechost.dll"]},
@@ -350,7 +353,11 @@
 {name:"api-ms-win-security-credentials-l2-1-0", count:1, red: ["sechost.dll"]},
 {name:"api-ms-win-security-cryptoapi-l1-1-0", count:1, red: ["cryptsp.dll"]},
 {name:"api-ms-win-security-grouppolicy-l1-1-0", count:1, red: ["kernelbase.dll"]},
+
 {name:"api-ms-win-security-isolatedcontainer-l1-1-0", count:1, red: ["shcore.dll"]},
+
+{name:"api-ms-win-shcore-taskpool-l1-1-0", count:1, red: ["shcore.dll"]},
+
 {name:"api-ms-win-security-logon-l1-1-1", count:1, red: ["advapi32.dll"]},
 {name:"api-ms-win-security-lsalookup-ansi-l2-1-0", count:1, red: ["advapi32.dll"]},
 {name:"api-ms-win-security-lsalookup-l1-1-0", count:1, red: ["sechost.dll"]},
